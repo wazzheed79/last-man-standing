@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
+import Countdown from '@/components/Countdown'
 
 export default function LeaguePickPage() {
   const params = useParams()
@@ -14,6 +15,8 @@ export default function LeaguePickPage() {
   const [comp, setComp] = useState<any>(null)
   const [fixtures, setFixtures] = useState<any[]>([])
   const [usedTeams, setUsedTeams] = useState<number[]>([])
+  const [currentPick, setCurrentPick] = useState<any>(null)
+  const [deadline, setDeadline] = useState<Date | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -69,17 +72,42 @@ export default function LeaguePickPage() {
       setFixtures(fixturesData || [])
       setLastUpdated(new Date())
 
+      if (fixturesData && fixturesData.length > 0) {
+        const firstKick = fixturesData.reduce(
+          (min: string, f: any) => (f.utc_date < min ? f.utc_date : min),
+          fixturesData[0].utc_date
+        )
+        setDeadline(new Date(firstKick))
+      } else {
+        setDeadline(null)
+      }
+
       const { data: picksData } = await supabase
         .from('picks')
         .select('*')
         .eq('player_id', me.id)
 
-      setUsedTeams((picksData || []).map((p: any) => p.team_id))
+      const allPicks = picksData || []
+      const thisWeek = allPicks.find((p: any) => p.gameweek === gw) || null
+      setCurrentPick(thisWeek)
+
+      // Teams used in other weeks stay locked; current week pick can be swapped if allowed
+      setUsedTeams(
+        allPicks
+          .filter((p: any) => p.gameweek !== gw)
+          .map((p: any) => p.team_id)
+      )
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const canChangePick = () => {
+    if (!comp?.allow_pick_changes) return false
+    if (!deadline) return true
+    return new Date() < deadline
   }
 
   const handlePick = async () => {
@@ -89,18 +117,35 @@ export default function LeaguePickPage() {
     setMessage('')
 
     try {
-      const { error } = await supabase.from('picks').insert({
-        competition_id: leagueId,
-        player_id: player.id,
-        gameweek: comp.current_gameweek,
-        team_id: selectedTeam.id,
-        team_name: selectedTeam.name,
-      })
-      if (error) throw error
+      if (currentPick) {
+        if (!canChangePick()) {
+          throw new Error(
+            'Picks are locked. You cannot change your team after the first kick-off (or the league does not allow changes).'
+          )
+        }
+        const { error } = await supabase
+          .from('picks')
+          .update({
+            team_id: selectedTeam.id,
+            team_name: selectedTeam.name,
+          })
+          .eq('id', currentPick.id)
+        if (error) throw error
+        setMessage(`Changed pick to ${selectedTeam.name} for GW${comp.current_gameweek}`)
+      } else {
+        const { error } = await supabase.from('picks').insert({
+          competition_id: leagueId,
+          player_id: player.id,
+          gameweek: comp.current_gameweek,
+          team_id: selectedTeam.id,
+          team_name: selectedTeam.name,
+        })
+        if (error) throw error
+        setMessage(`Picked ${selectedTeam.name} for GW${comp.current_gameweek}`)
+      }
 
-      setMessage(`Picked ${selectedTeam.name} for GW${comp.current_gameweek}`)
       setSelectedTeam(null)
-      setUsedTeams((prev) => [...prev, selectedTeam.id])
+      await load(false)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -120,7 +165,7 @@ export default function LeaguePickPage() {
 
   const scoreLabel = (f: any) => {
     if (isLive(f.status) || isFinished(f.status) || f.home_score != null) {
-      return `${f.home_score ?? 0}–${f.away_score ?? 0}`
+      return `${f.home_score ?? 0}-${f.away_score ?? 0}`
     }
     return 'vs'
   }
@@ -171,6 +216,32 @@ export default function LeaguePickPage() {
           <h2 className="font-semibold text-slate-800">
             Gameweek {comp?.current_gameweek} — click a team
           </h2>
+          {deadline && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
+              <span>
+                First kick-off:{' '}
+                {deadline.toLocaleString(undefined, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              <Countdown deadline={deadline} />
+              <span>
+                {comp?.allow_pick_changes
+                  ? '· Changes allowed until lock'
+                  : '· First pick is locked'}
+              </span>
+            </p>
+          )}
+          {currentPick && (
+            <p className="text-xs text-blue-700 mt-1 font-medium">
+              Current pick: {currentPick.team_name}
+              {canChangePick() ? ' — select another team to change' : ' — locked'}
+            </p>
+          )}
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -185,8 +256,24 @@ export default function LeaguePickPage() {
               const live = isLive(f.status)
               const finished = isFinished(f.status)
 
+              const kickoffLabel = f.utc_date
+                ? new Date(f.utc_date).toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''
+
               return (
                 <div key={f.match_id} className="px-3 py-3">
+                  {kickoffLabel && (
+                    <p className="text-center text-[11px] text-slate-500 mb-1.5">
+                      {kickoffLabel}
+                      {live ? ' · LIVE' : finished ? ' · FT' : ' · Kick-off'}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -288,10 +375,21 @@ export default function LeaguePickPage() {
         <button
           type="button"
           onClick={handlePick}
-          disabled={!selectedTeam || submitting}
+          disabled={
+            !selectedTeam ||
+            submitting ||
+            (currentPick && !canChangePick()) ||
+            (currentPick && selectedTeam?.id === currentPick.team_id)
+          }
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-medium"
         >
-          {submitting ? 'Saving...' : 'Confirm Pick'}
+          {submitting
+            ? 'Saving...'
+            : currentPick && canChangePick()
+            ? 'Change Pick'
+            : currentPick && !canChangePick()
+            ? 'Pick locked'
+            : 'Confirm Pick'}
         </button>
       </div>
     </div>

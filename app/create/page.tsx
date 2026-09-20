@@ -9,6 +9,8 @@ export default function CreateCompetitionPage() {
   const [displayName, setDisplayName] = useState('')
   const [description, setDescription] = useState('')
   const [startGameweek, setStartGameweek] = useState<string>('auto')
+  const [allowPickChanges, setAllowPickChanges] = useState(true)
+  const [hidePicksUntilKo, setHidePicksUntilKo] = useState(false)
   const [upcomingGameweeks, setUpcomingGameweeks] = useState<
     { matchday: number; deadline: string }[]
   >([])
@@ -59,6 +61,8 @@ export default function CreateCompetitionPage() {
         p_display_name: displayName.trim() || null,
         p_start_gameweek: startGameweek === 'auto' ? null : Number(startGameweek),
         p_description: description.trim() || null,
+        p_allow_pick_changes: allowPickChanges,
+        p_hide_picks_until_ko: hidePicksUntilKo,
       })
 
       if (error) throw error
@@ -142,6 +146,41 @@ export default function CreateCompetitionPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowPickChanges}
+                  onChange={(e) => setAllowPickChanges(e.target.checked)}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Allow changing picks until first kick-off
+                  </span>
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    Players can change their team until the first match of the week starts.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hidePicksUntilKo}
+                  onChange={(e) => setHidePicksUntilKo(e.target.checked)}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-900">
+                    Hide other players&apos; picks until first kick-off
+                  </span>
+                  <span className="block text-xs text-gray-500 mt-0.5">
+                    Stops people copying picks. Everyone can still see their own.
+                  </span>
+                </span>
+              </label>
             </div>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

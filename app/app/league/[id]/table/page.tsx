@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import TeamCrest from '@/components/TeamCrest'
 
 export default function LeagueTablePage() {
   const [standings, setStandings] = useState<any[]>([])
@@ -42,32 +41,41 @@ export default function LeagueTablePage() {
     }
   }
 
-  const shortName = (name: string) =>
+  const clean = (name: string) =>
     (name || '')
       .replace(' FC', '')
       .replace(' AFC', '')
       .replace(' and Hove Albion', '')
       .trim()
-      .toLowerCase()
 
   const namesMatch = (a: string, b: string) => {
-    const x = shortName(a)
-    const y = shortName(b)
+    const x = clean(a).toLowerCase()
+    const y = clean(b).toLowerCase()
     return x === y || x.includes(y) || y.includes(x)
   }
 
   const getTeamForm = (teamId: number, teamName: string) => {
-    const matches = finishedFixtures.filter((f) => {
-      if (f.home_team_id === teamId || f.away_team_id === teamId) return true
-      if (namesMatch(f.home_team_name, teamName)) return true
-      if (namesMatch(f.away_team_name, teamName)) return true
-      return false
-    })
+    // All finished games for this team, newest first
+    const matches = finishedFixtures
+      .filter((f) => {
+        if (f.home_team_id === teamId || f.away_team_id === teamId) return true
+        if (namesMatch(f.home_team_name, teamName)) return true
+        if (namesMatch(f.away_team_name, teamName)) return true
+        return false
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.utc_date).getTime() - new Date(a.utc_date).getTime()
+      )
+      // Only the last 5 results — oldest drops off when a 6th arrives
+      .slice(0, 5)
+      // Display left → right as oldest → newest (usual form style)
+      .reverse()
 
-    // Already ordered newest first from the query
-    return matches.slice(0, 5).map((match) => {
+    return matches.map((match) => {
       const isHome =
-        match.home_team_id === teamId || namesMatch(match.home_team_name, teamName)
+        match.home_team_id === teamId ||
+        namesMatch(match.home_team_name, teamName)
       const teamScore = isHome ? match.home_score : match.away_score
       const oppScore = isHome ? match.away_score : match.home_score
       const opponent = isHome ? match.away_team_name : match.home_team_name
@@ -78,14 +86,7 @@ export default function LeagueTablePage() {
 
       return {
         result,
-        label:
-          result +
-          ' ' +
-          teamScore +
-          '-' +
-          oppScore +
-          ' vs ' +
-          shortName(opponent).replace(/\b\w/g, (c) => c.toUpperCase()),
+        label: result + ' ' + teamScore + '-' + oppScore + ' vs ' + clean(opponent),
       }
     })
   }
@@ -93,13 +94,11 @@ export default function LeagueTablePage() {
   if (loading) {
     return <p className="text-slate-500 text-center">Loading table...</p>
   }
-
   if (error) {
     return (
       <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
     )
   }
-
   if (!standings.length) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-slate-600 text-sm">
@@ -109,14 +108,13 @@ export default function LeagueTablePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[760px]">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
-              <th className="text-left py-3 px-3 w-10">#</th>
-              <th className="text-left py-3 px-3 min-w-[150px]">Team</th>
+              <th className="text-left py-3 px-3">#</th>
+              <th className="text-left py-3 px-3">Team</th>
               <th className="text-center py-3 px-2">P</th>
               <th className="text-center py-3 px-2">W</th>
               <th className="text-center py-3 px-2">D</th>
@@ -125,7 +123,6 @@ export default function LeagueTablePage() {
               <th className="text-center py-3 px-2">GA</th>
               <th className="text-center py-3 px-2">GD</th>
               <th className="text-center py-3 px-2 font-bold">Pts</th>
-              <th className="text-center py-3 px-4 min-w-[140px]">Form</th>
             </tr>
           </thead>
           <tbody>
@@ -136,56 +133,30 @@ export default function LeagueTablePage() {
               const form = getTeamForm(teamId, teamName)
 
               return (
-                <tr
-                  key={teamId}
-                  className="border-b border-slate-100 hover:bg-slate-50"
-                >
-                  <td className="py-3 px-3 font-semibold text-slate-700">
+                <tr key={teamId} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-3 px-3 font-semibold align-top">
                     {row.position ?? row.rank}
                   </td>
                   <td className="py-3 px-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1.5">
                       {(team.crest || team.team_crest) && (
                         <img
                           src={team.crest || team.team_crest}
                           alt=""
-                          className="w-5 h-5 object-contain shrink-0"
+                          className="w-5 h-5 object-contain"
                         />
                       )}
-                      <span className="font-medium text-slate-900 whitespace-nowrap">
-                        {team.shortName || team.name}
+                      <span className="font-medium whitespace-nowrap">
+                        {team.shortName || clean(team.name)}
                       </span>
                     </div>
-                  </td>
-                  <td className="text-center py-3 px-2">
-                    {row.playedGames ?? row.played}
-                  </td>
-                  <td className="text-center py-3 px-2">{row.won ?? row.wins}</td>
-                  <td className="text-center py-3 px-2">{row.draw ?? row.draws}</td>
-                  <td className="text-center py-3 px-2">{row.lost ?? row.losses}</td>
-                  <td className="text-center py-3 px-2">
-                    {row.goalsFor ?? row.gf}
-                  </td>
-                  <td className="text-center py-3 px-2">
-                    {row.goalsAgainst ?? row.ga}
-                  </td>
-                  <td className="text-center py-3 px-2">
-                    {row.goalDifference ?? row.gd}
-                  </td>
-                  <td className="text-center py-3 px-2 font-bold">
-                    {row.points ?? row.pts}
-                  </td>
-                  <td className="text-center py-3 px-4">
-                    <div className="flex gap-1 justify-center items-center min-w-[130px]">
-                      {form.length === 0 && (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
+                    <div className="flex gap-1 flex-wrap">
                       {form.map((f, i) => (
                         <span
                           key={i}
                           title={f.label}
                           className={
-                            'relative group w-6 h-6 rounded-full text-[11px] font-bold text-white flex items-center justify-center cursor-default shrink-0 ' +
+                            'relative group w-6 h-6 rounded-full text-[11px] font-bold text-white flex items-center justify-center cursor-default ' +
                             (f.result === 'W'
                               ? 'bg-emerald-500'
                               : f.result === 'D'
@@ -203,6 +174,30 @@ export default function LeagueTablePage() {
                       ))}
                     </div>
                   </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.playedGames ?? row.played}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.won ?? row.wins}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.draw ?? row.draws}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.lost ?? row.losses}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.goalsFor ?? row.gf}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.goalsAgainst ?? row.ga}
+                  </td>
+                  <td className="text-center py-3 px-2 align-top">
+                    {row.goalDifference ?? row.gd}
+                  </td>
+                  <td className="text-center py-3 px-2 font-bold align-top">
+                    {row.points ?? row.pts}
+                  </td>
                 </tr>
               )
             })}
@@ -210,9 +205,8 @@ export default function LeagueTablePage() {
         </table>
       </div>
       <p className="text-xs text-slate-400 px-4 py-2 border-t border-slate-100">
-        Hover over W / D / L to see the score and opponent. Up to last 5 games.
+        Hover over W / D / L to see score and opponent
       </p>
-      </div>
     </div>
   )
 }

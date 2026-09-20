@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
-import TeamCrest from '@/components/TeamCrest'
+import Countdown from '@/components/Countdown'
 
 export default function LeaguePickPage() {
   const params = useParams()
@@ -13,21 +13,27 @@ export default function LeaguePickPage() {
 
   const [player, setPlayer] = useState<any>(null)
   const [comp, setComp] = useState<any>(null)
-  const [deadline, setDeadline] = useState<string | null>(null)
   const [fixtures, setFixtures] = useState<any[]>([])
   const [usedTeams, setUsedTeams] = useState<number[]>([])
+  const [currentPick, setCurrentPick] = useState<any>(null)
+  const [deadline, setDeadline] = useState<Date | null>(null)
   const [selectedTeam, setSelectedTeam] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
-    load()
+    load(true)
+    const interval = setInterval(() => load(false), 30000)
+    return () => clearInterval(interval)
   }, [leagueId])
 
-  const load = async () => {
+  const load = async (showLoading = false) => {
     try {
+      if (showLoading) setLoading(true)
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
@@ -58,29 +64,50 @@ export default function LeaguePickPage() {
 
       const gw = competition.current_gameweek
 
-      const { data: deadlineData } = await supabase.rpc('get_gameweek_deadline', {
-        p_competition_id: leagueId,
-      })
-      setDeadline(deadlineData || null)
-
       const { data: fixturesData } = await supabase
         .from('fixtures_cache')
         .select('*')
         .eq('matchday', gw)
         .order('utc_date')
       setFixtures(fixturesData || [])
+      setLastUpdated(new Date())
+
+      if (fixturesData && fixturesData.length > 0) {
+        const firstKick = fixturesData.reduce(
+          (min: string, f: any) => (f.utc_date < min ? f.utc_date : min),
+          fixturesData[0].utc_date
+        )
+        setDeadline(new Date(firstKick))
+      } else {
+        setDeadline(null)
+      }
 
       const { data: picksData } = await supabase
         .from('picks')
         .select('*')
         .eq('player_id', me.id)
 
-      setUsedTeams((picksData || []).map((p: any) => p.team_id))
+      const allPicks = picksData || []
+      const thisWeek = allPicks.find((p: any) => p.gameweek === gw) || null
+      setCurrentPick(thisWeek)
+
+      // Teams used in other weeks stay locked; current week pick can be swapped if allowed
+      setUsedTeams(
+        allPicks
+          .filter((p: any) => p.gameweek !== gw)
+          .map((p: any) => p.team_id)
+      )
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const canChangePick = () => {
+    if (!comp?.allow_pick_changes) return false
+    if (!deadline) return true
+    return new Date() < deadline
   }
 
   const handlePick = async () => {
@@ -90,49 +117,60 @@ export default function LeaguePickPage() {
     setMessage('')
 
     try {
-      const { error } = await supabase.from('picks').insert({
-        competition_id: leagueId,
-        player_id: player.id,
-        gameweek: comp.current_gameweek,
-        team_id: selectedTeam.id,
-        team_name: selectedTeam.name,
-      })
-      if (error) throw error
-
-      setMessage(`Picked ${selectedTeam.name} for GW${comp.current_gameweek}`)
-      setSelectedTeam(null)
-      setUsedTeams((prev) => [...prev, selectedTeam.id])
-    } catch (err: any) {
-      if (err.code === '23505') {
-        // Unique constraint violations from the picks table
-        if (/team_id/.test(err.message || '')) {
-          setError("You've already picked this team earlier this season.")
-        } else {
-          setError("You've already made a pick for this gameweek.")
+      if (currentPick) {
+        if (!canChangePick()) {
+          throw new Error(
+            'Picks are locked. You cannot change your team after the first kick-off (or the league does not allow changes).'
+          )
         }
-      } else if (err.code === '42501' || /row-level security/i.test(err.message || '')) {
-        // RLS blocks the insert once the gameweek's first kickoff has passed
-        setError('The picking deadline for this gameweek has passed.')
+        const { error } = await supabase
+          .from('picks')
+          .update({
+            team_id: selectedTeam.id,
+            team_name: selectedTeam.name,
+          })
+          .eq('id', currentPick.id)
+        if (error) throw error
+        setMessage(`Changed pick to ${selectedTeam.name} for GW${comp.current_gameweek}`)
       } else {
-        setError(err.message)
+        const { error } = await supabase.from('picks').insert({
+          competition_id: leagueId,
+          player_id: player.id,
+          gameweek: comp.current_gameweek,
+          team_id: selectedTeam.id,
+          team_name: selectedTeam.name,
+        })
+        if (error) throw error
+        setMessage(`Picked ${selectedTeam.name} for GW${comp.current_gameweek}`)
       }
+
+      setSelectedTeam(null)
+      await load(false)
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) return <p className="text-slate-500 text-center">Loading...</p>
+  const isLive = (status: string) => {
+    const s = (status || '').toUpperCase()
+    return ['IN_PLAY', 'LIVE', 'PAUSED', 'HALFTIME', 'HT'].includes(s)
+  }
 
-  const deadlinePassed = deadline ? new Date(deadline).getTime() < Date.now() : false
-  const formattedDeadline = deadline
-    ? new Date(deadline).toLocaleString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null
+  const isFinished = (status: string) => {
+    const s = (status || '').toUpperCase()
+    return ['FINISHED', 'FT', 'AWARDED'].includes(s)
+  }
+
+  const scoreLabel = (f: any) => {
+    if (isLive(f.status) || isFinished(f.status) || f.home_score != null) {
+      return `${f.home_score ?? 0}-${f.away_score ?? 0}`
+    }
+    return 'vs'
+  }
+
+  if (loading) return <p className="text-slate-500 text-center">Loading...</p>
 
   if (player && player.status !== 'alive') {
     return (
@@ -157,17 +195,51 @@ export default function LeaguePickPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center px-1">
+        <p className="text-xs text-slate-500">
+          {lastUpdated
+            ? `Scores refresh every 30s · Updated ${lastUpdated.toLocaleTimeString()}`
+            : 'Loading scores...'}
+        </p>
+        <button
+          type="button"
+          onClick={() => load(false)}
+          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+        >
+          Refresh now
+        </button>
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
           <h2 className="font-semibold text-slate-800">
             Gameweek {comp?.current_gameweek} — click a team
           </h2>
-          {formattedDeadline && (
-            <p className={`text-xs mt-0.5 ${deadlinePassed ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
-              {deadlinePassed
-                ? `Picks closed ${formattedDeadline}`
-                : `Picks close ${formattedDeadline}`}
+          {deadline && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
+              <span>
+                First kick-off:{' '}
+                {deadline.toLocaleString(undefined, {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              <Countdown deadline={deadline} />
+              <span>
+                {comp?.allow_pick_changes
+                  ? '· Changes allowed until lock'
+                  : '· First pick is locked'}
+              </span>
+            </p>
+          )}
+          {currentPick && (
+            <p className="text-xs text-blue-700 mt-1 font-medium">
+              Current pick: {currentPick.team_name}
+              {canChangePick() ? ' — select another team to change' : ' — locked'}
             </p>
           )}
         </div>
@@ -181,58 +253,100 @@ export default function LeaguePickPage() {
               const awayUsed = usedTeams.includes(f.away_team_id)
               const homeSelected = selectedTeam?.id === f.home_team_id
               const awaySelected = selectedTeam?.id === f.away_team_id
+              const live = isLive(f.status)
+              const finished = isFinished(f.status)
+
+              const kickoffLabel = f.utc_date
+                ? new Date(f.utc_date).toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''
 
               return (
-                <div key={f.match_id} className="flex items-center px-3 py-3 gap-2">
-                  <button
-                    type="button"
-                    disabled={homeUsed}
-                    onClick={() =>
-                      !homeUsed &&
-                      setSelectedTeam({
-                        id: f.home_team_id,
-                        name: f.home_team_name,
-                        crest: f.home_team_crest,
-                      })
-                    }
-                    className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition ${
-                      homeSelected
-                        ? 'bg-blue-600 text-white'
-                        : homeUsed
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'hover:bg-slate-50 text-slate-800'
-                    }`}
-                  >
-                    <TeamCrest src={f.home_team_crest} className="w-6 h-6 object-contain" />
-                    <span className="truncate">
-                      {f.home_team_name?.replace(' FC', '').replace(' AFC', '')}
-                    </span>
-                  </button>
-                  <span className="text-xs text-slate-400">vs</span>
-                  <button
-                    type="button"
-                    disabled={awayUsed}
-                    onClick={() =>
-                      !awayUsed &&
-                      setSelectedTeam({
-                        id: f.away_team_id,
-                        name: f.away_team_name,
-                        crest: f.away_team_crest,
-                      })
-                    }
-                    className={`flex-1 flex items-center justify-end gap-2 px-3 py-2.5 rounded-lg text-right text-sm font-medium transition ${
-                      awaySelected
-                        ? 'bg-blue-600 text-white'
-                        : awayUsed
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'hover:bg-slate-50 text-slate-800'
-                    }`}
-                  >
-                    <span className="truncate">
-                      {f.away_team_name?.replace(' FC', '').replace(' AFC', '')}
-                    </span>
-                    <TeamCrest src={f.away_team_crest} className="w-6 h-6 object-contain" />
-                  </button>
+                <div key={f.match_id} className="px-3 py-3">
+                  {kickoffLabel && (
+                    <p className="text-center text-[11px] text-slate-500 mb-1.5">
+                      {kickoffLabel}
+                      {live ? ' · LIVE' : finished ? ' · FT' : ' · Kick-off'}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={homeUsed}
+                      onClick={() =>
+                        !homeUsed &&
+                        setSelectedTeam({
+                          id: f.home_team_id,
+                          name: f.home_team_name,
+                          crest: f.home_team_crest,
+                        })
+                      }
+                      className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition ${
+                        homeSelected
+                          ? 'bg-blue-600 text-white'
+                          : homeUsed
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : 'hover:bg-slate-50 text-slate-800'
+                      }`}
+                    >
+                      {f.home_team_crest && (
+                        <img src={f.home_team_crest} alt="" className="w-6 h-6 object-contain" />
+                      )}
+                      <span className="truncate">
+                        {f.home_team_name?.replace(' FC', '').replace(' AFC', '')}
+                      </span>
+                    </button>
+
+                    <div className="flex flex-col items-center min-w-[64px]">
+                      <span
+                        className={`text-sm font-bold ${
+                          live ? 'text-red-600' : finished ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                      >
+                        {scoreLabel(f)}
+                      </span>
+                      {live && (
+                        <span className="text-[10px] font-bold text-red-600 animate-pulse">
+                          LIVE
+                        </span>
+                      )}
+                      {finished && (
+                        <span className="text-[10px] font-medium text-slate-400">FT</span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={awayUsed}
+                      onClick={() =>
+                        !awayUsed &&
+                        setSelectedTeam({
+                          id: f.away_team_id,
+                          name: f.away_team_name,
+                          crest: f.away_team_crest,
+                        })
+                      }
+                      className={`flex-1 flex items-center justify-end gap-2 px-3 py-2.5 rounded-lg text-right text-sm font-medium transition ${
+                        awaySelected
+                          ? 'bg-blue-600 text-white'
+                          : awayUsed
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : 'hover:bg-slate-50 text-slate-800'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {f.away_team_name?.replace(' FC', '').replace(' AFC', '')}
+                      </span>
+                      {f.away_team_crest && (
+                        <img src={f.away_team_crest} alt="" className="w-6 h-6 object-contain" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               )
             })
@@ -244,7 +358,7 @@ export default function LeaguePickPage() {
         {selectedTeam ? (
           <div className="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-lg">
             {selectedTeam.crest && (
-              <TeamCrest src={selectedTeam.crest} className="w-8 h-8 object-contain" />
+              <img src={selectedTeam.crest} alt="" className="w-8 h-8 object-contain" />
             )}
             <div>
               <p className="text-xs text-blue-600 font-medium">Selected</p>
@@ -257,19 +371,25 @@ export default function LeaguePickPage() {
 
         {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
         {message && <p className="text-emerald-600 text-sm mb-3">{message}</p>}
-        {deadlinePassed && !message && (
-          <p className="text-red-600 text-sm mb-3">
-            The picking deadline for this gameweek has passed.
-          </p>
-        )}
 
         <button
           type="button"
           onClick={handlePick}
-          disabled={!selectedTeam || submitting || deadlinePassed}
+          disabled={
+            !selectedTeam ||
+            submitting ||
+            (currentPick && !canChangePick()) ||
+            (currentPick && selectedTeam?.id === currentPick.team_id)
+          }
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-medium"
         >
-          {submitting ? 'Saving...' : 'Confirm Pick'}
+          {submitting
+            ? 'Saving...'
+            : currentPick && canChangePick()
+            ? 'Change Pick'
+            : currentPick && !canChangePick()
+            ? 'Pick locked'
+            : 'Confirm Pick'}
         </button>
       </div>
     </div>

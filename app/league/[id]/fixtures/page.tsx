@@ -55,25 +55,49 @@ export default function LeagueFixturesPage() {
     }
   }
 
+  const formatKickoff = (iso: string) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    return d.toLocaleString(undefined, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   const row = (f: any) => (
-    <div key={f.match_id} className="flex items-center justify-between px-4 py-3 gap-2">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <TeamCrest src={f.home_team_crest} className="w-6 h-6 object-contain shrink-0" />
-        <span className="text-sm font-medium truncate">
-          {f.home_team_name?.replace(' FC', '').replace(' AFC', '')}
-        </span>
+    <div key={f.match_id} className="px-4 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <TeamCrest src={f.home_team_crest} className="w-6 h-6 object-contain shrink-0" />
+          <span className="text-sm font-medium truncate">
+            {f.home_team_name?.replace(' FC', '').replace(' AFC', '')}
+          </span>
+        </div>
+        <div className="text-sm font-bold text-slate-800 min-w-[56px] text-center">
+          {f.status === 'FINISHED' || f.home_score != null
+            ? `${f.home_score ?? 0}–${f.away_score ?? 0}`
+            : 'vs'}
+        </div>
+        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+          <span className="text-sm font-medium truncate text-right">
+            {f.away_team_name?.replace(' FC', '').replace(' AFC', '')}
+          </span>
+          <TeamCrest src={f.away_team_crest} className="w-6 h-6 object-contain shrink-0" />
+        </div>
       </div>
-      <div className="text-sm font-bold text-slate-800 min-w-[56px] text-center">
-        {f.status === 'FINISHED' || f.home_score != null
-          ? `${f.home_score ?? 0}–${f.away_score ?? 0}`
-          : 'vs'}
-      </div>
-      <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-        <span className="text-sm font-medium truncate text-right">
-          {f.away_team_name?.replace(' FC', '').replace(' AFC', '')}
-        </span>
-        <TeamCrest src={f.away_team_crest} className="w-6 h-6 object-contain shrink-0" />
-      </div>
+      <p className="text-center text-xs text-slate-500 mt-1.5">
+        {formatKickoff(f.utc_date)}
+        {f.status === 'TIMED' || f.status === 'SCHEDULED'
+          ? ' · Kick-off'
+          : f.status === 'IN_PLAY' || f.status === 'LIVE' || f.status === 'PAUSED'
+          ? ' · Live'
+          : f.status === 'FINISHED' || f.status === 'FT'
+          ? ' · Full time'
+          : ''}
+      </p>
     </div>
   )
 

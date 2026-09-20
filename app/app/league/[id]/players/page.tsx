@@ -15,6 +15,8 @@ export default function LeaguePlayersPage() {
   const [picks, setPicks] = useState<any[]>([])
   const [crestMap, setCrestMap] = useState<Record<number, string>>({})
   const [winnerId, setWinnerId] = useState<string | null>(null)
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
+  const [picksHidden, setPicksHidden] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -32,7 +34,7 @@ export default function LeaguePlayersPage() {
 
       const { data: fixtures } = await supabase
         .from('fixtures_cache')
-        .select('home_team_id, home_team_crest, away_team_id, away_team_crest')
+        .select('home_team_id, home_team_crest, away_team_id, away_team_crest, matchday, utc_date')
 
       const map: Record<number, string> = {}
       ;(fixtures || []).forEach((f: any) => {
@@ -43,10 +45,26 @@ export default function LeaguePlayersPage() {
 
       const { data: comp } = await supabase
         .from('competitions')
-        .select('winner_player_id')
+        .select('winner_player_id, current_gameweek, hide_picks_until_ko')
         .eq('id', leagueId)
         .single()
       setWinnerId(comp?.winner_player_id || null)
+
+      let hidden = false
+      if (comp?.hide_picks_until_ko) {
+        const gw = comp.current_gameweek
+        const gwFixtures = (fixtures || []).filter((f: any) => f.matchday === gw)
+        if (gwFixtures.length) {
+          const first = gwFixtures.reduce(
+            (min: string, f: any) => (f.utc_date < min ? f.utc_date : min),
+            gwFixtures[0].utc_date
+          )
+          hidden = new Date() < new Date(first)
+        } else {
+          hidden = true
+        }
+      }
+      setPicksHidden(hidden)
 
       const { data: playersData, error: pErr } = await supabase
         .from('competition_players')
@@ -55,6 +73,9 @@ export default function LeaguePlayersPage() {
         .order('joined_at', { ascending: true })
       if (pErr) throw pErr
       setPlayers(playersData || [])
+
+      const mine = (playersData || []).find((p: any) => p.user_id === user.id)
+      setMyPlayerId(mine?.id || null)
 
       const { data: picksData, error: picksErr } = await supabase
         .from('picks')
@@ -70,8 +91,13 @@ export default function LeaguePlayersPage() {
     }
   }
 
-  const getPlayerPicks = (playerId: string) =>
-    picks.filter((p) => p.player_id === playerId)
+  const getPlayerPicks = (playerId: string) => {
+    const list = picks.filter((p) => p.player_id === playerId)
+    if (!picksHidden) return list
+    // Hide other players' picks until first KO; always show your own
+    if (playerId === myPlayerId) return list
+    return []
+  }
 
   const shortName = (name: string) =>
     (name || '')
@@ -84,7 +110,13 @@ export default function LeaguePlayersPage() {
   if (error) return <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+    <div className="max-w-2xl mx-auto space-y-3">
+      {picksHidden && (
+        <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+          Other players&apos; picks are hidden until the first kick-off of this gameweek. You can still see your own.
+        </p>
+      )}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700">
       {players.length === 0 && (
         <p className="p-5 text-slate-500 text-sm">No players in this league yet.</p>
       )}
@@ -165,6 +197,7 @@ export default function LeaguePlayersPage() {
           </div>
         )
       })}
+      </div>
     </div>
   )
 }

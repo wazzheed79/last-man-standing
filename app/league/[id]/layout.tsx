@@ -39,7 +39,7 @@ export default function LeagueLayout({ children }: { children: React.ReactNode }
         gameweek={meta?.current_gameweek}
         status={meta?.status}
       />
-      <div className="px-4 py-6">{children}</div>
+      <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
     </div>
   )
 }

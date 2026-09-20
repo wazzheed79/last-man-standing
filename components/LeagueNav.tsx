@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import ThemeToggle from '@/components/ThemeToggle'
 
 interface LeagueNavProps {
   leagueId: string
@@ -61,12 +62,15 @@ export default function LeagueNav({ leagueId, name, gameweek, status }: LeagueNa
               )}
             </div>
           </div>
-          <button
-            onClick={() => router.push('/competitions')}
-            className="text-sm text-slate-500 hover:text-slate-800 shrink-0"
-          >
-            My leagues
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
+            <button
+              onClick={() => router.push('/competitions')}
+              className="text-sm text-slate-500 hover:text-slate-800"
+            >
+              My leagues
+            </button>
+          </div>
         </div>
 
         <nav className="flex gap-1 mt-3 -mb-4 overflow-x-auto">

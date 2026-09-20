@@ -1,17 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function JoinCompetitionPage() {
   const [joinCode, setJoinCode] = useState('')
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [joinedId, setJoinedId] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    const code = searchParams.get('code')
+    if (code) setJoinCode(code.toUpperCase())
+  }, [searchParams])
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
