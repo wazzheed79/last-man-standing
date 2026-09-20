@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function JoinCompetitionPage() {
+function JoinCompetitionForm() {
   const [joinCode, setJoinCode] = useState('')
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -28,7 +28,6 @@ export default function JoinCompetitionPage() {
     try {
       const code = joinCode.trim().toUpperCase()
 
-      // 1. Find the competition
       const { data: competition, error: compError } = await supabase
         .from('competitions')
         .select('id, name')
@@ -39,11 +38,9 @@ export default function JoinCompetitionPage() {
         throw new Error('Competition not found. Check the join code.')
       }
 
-      // 2. Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('You must be logged in')
 
-      // 3. Check if already joined
       const { data: existing } = await supabase
         .from('competition_players')
         .select('id')
@@ -57,7 +54,6 @@ export default function JoinCompetitionPage() {
         return
       }
 
-      // 4. Join the competition
       const displayName = user.email?.split('@')[0] || 'Player'
 
       const { error: joinError } = await supabase
@@ -129,5 +125,19 @@ export default function JoinCompetitionPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function JoinCompetitionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <p className="text-slate-500">Loading...</p>
+        </div>
+      }
+    >
+      <JoinCompetitionForm />
+    </Suspense>
   )
 }
