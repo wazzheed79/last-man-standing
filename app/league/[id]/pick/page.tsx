@@ -105,7 +105,7 @@ export default function LeaguePickPage() {
   }
 
   const canChangePick = () => {
-    if (!comp?.allow_pick_changes) return false
+    if (comp?.allow_pick_changes === false) return false
     if (!deadline) return true
     return new Date() < deadline
   }
@@ -117,37 +117,20 @@ export default function LeaguePickPage() {
     setMessage('')
 
     try {
-      if (currentPick) {
-        if (!canChangePick()) {
-          throw new Error(
-            'Picks are locked. You cannot change your team after the first kick-off (or the league does not allow changes).'
-          )
-        }
-        const { error } = await supabase
-          .from('picks')
-          .update({
-            team_id: selectedTeam.id,
-            team_name: selectedTeam.name,
-          })
-          .eq('id', currentPick.id)
-        if (error) throw error
-        setMessage(`Changed pick to ${selectedTeam.name} for GW${comp.current_gameweek}`)
-      } else {
-        const { error } = await supabase.from('picks').insert({
-          competition_id: leagueId,
-          player_id: player.id,
-          gameweek: comp.current_gameweek,
-          team_id: selectedTeam.id,
-          team_name: selectedTeam.name,
-        })
-        if (error) throw error
-        setMessage(`Picked ${selectedTeam.name} for GW${comp.current_gameweek}`)
-      }
+      const { error } = await supabase.rpc('make_pick', {
+        competition_id: leagueId,
+        team_id: selectedTeam.id,
+        team_name: selectedTeam.name,
+      })
 
+      if (error) throw error
+
+      const action = currentPick ? 'Changed' : 'Picked'
+      setMessage(`${action} ${selectedTeam.name} for GW${comp.current_gameweek}`)
       setSelectedTeam(null)
       await load(false)
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Unable to save pick.')
     } finally {
       setSubmitting(false)
     }
@@ -230,9 +213,9 @@ export default function LeaguePickPage() {
               </span>
               <Countdown deadline={deadline} />
               <span>
-                {comp?.allow_pick_changes
-                  ? '· Changes allowed until lock'
-                  : '· First pick is locked'}
+                {comp?.allow_pick_changes === false
+                  ? '· First pick is locked'
+                  : '· Changes allowed until lock'}
               </span>
             </p>
           )}
