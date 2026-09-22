@@ -107,6 +107,8 @@ export default function LeaguePickPage() {
   }
 
   const canChangePick = () => {
+    // Postponed picks can always be re-selected
+    if (currentPick?.status === 'postponed') return true
     if (comp?.allow_pick_changes === false) return false
     if (!deadline) return true
     return new Date() < deadline
@@ -119,10 +121,11 @@ export default function LeaguePickPage() {
     setMessage('')
 
     try {
+      // Param names must match the DB function (p_*)
       const { error } = await supabase.rpc('make_pick', {
-        competition_id: leagueId,
-        team_id: selectedTeam.id,
-        team_name: selectedTeam.name,
+        p_competition_id: leagueId,
+        p_team_id: selectedTeam.id,
+        p_team_name: selectedTeam.name,
       })
 
       if (error) throw error
