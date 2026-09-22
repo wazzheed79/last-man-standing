@@ -10,11 +10,17 @@ export default function LeagueLayout({ children }: { children: React.ReactNode }
   const leagueId = params.id as string
   const router = useRouter()
   const supabase = createClient()
-  const [meta, setMeta] = useState<{ name: string; current_gameweek: number; status: string } | null>(null)
+  const [meta, setMeta] = useState<{
+    name: string
+    current_gameweek: number
+    status: string
+  } | null>(null)
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
@@ -32,7 +38,7 @@ export default function LeagueLayout({ children }: { children: React.ReactNode }
   }, [leagueId])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
       <LeagueNav
         leagueId={leagueId}
         name={meta?.name}
