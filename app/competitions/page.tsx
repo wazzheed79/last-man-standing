@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<any[]>([])
@@ -21,7 +22,9 @@ export default function CompetitionsPage() {
 
   const loadCompetitions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
@@ -97,16 +100,17 @@ export default function CompetitionsPage() {
     }
   }
 
-  const active = competitions.filter((i) =>
-    i.competitions && ['open', 'active'].includes(i.competitions.status)
+  const active = competitions.filter(
+    (i) => i.competitions && ['open', 'active'].includes(i.competitions.status)
   )
-  const finished = competitions.filter((i) =>
-    i.competitions && ['finished', 'archived'].includes(i.competitions.status)
+  const finished = competitions.filter(
+    (i) =>
+      i.competitions && ['finished', 'archived'].includes(i.competitions.status)
   )
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p className="text-slate-500">Loading...</p>
       </div>
     )
@@ -121,22 +125,27 @@ export default function CompetitionsPage() {
     return (
       <div
         key={item.id}
-        className="bg-white rounded-xl shadow-sm border border-slate-200 p-5"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5"
       >
         <div className="flex justify-between items-start gap-3">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-slate-900 truncate">{comp.name}</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Code: <span className="font-mono font-bold text-slate-700">{comp.join_code}</span>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
+              {comp.name}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Code:{' '}
+              <span className="font-mono font-bold text-slate-700 dark:text-slate-200">
+                {comp.join_code}
+              </span>
             </p>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               GW {comp.current_gameweek}
               {' · '}
               <span
                 className={
                   item.status === 'alive'
-                    ? 'text-emerald-600 font-medium'
-                    : 'text-red-600 font-medium'
+                    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                    : 'text-red-600 dark:text-red-400 font-medium'
                 }
               >
                 {item.status === 'alive'
@@ -160,7 +169,7 @@ export default function CompetitionsPage() {
                 type="button"
                 onClick={() => handleArchive(comp.id, comp.name)}
                 disabled={archivingId === comp.id}
-                className="text-xs text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 disabled:opacity-50"
               >
                 {archivingId === comp.id ? 'Archiving...' : 'Archive'}
               </button>
@@ -182,36 +191,46 @@ export default function CompetitionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">My Leagues</h1>
-            <p className="text-xs text-slate-500">Open a league to play and view history</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">My Leagues</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Open a league to play and view history
+            </p>
           </div>
-          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            Home
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
+            <Link
+              href="/"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 font-medium"
+            >
+              Home
+            </Link>
+          </div>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-8">
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+          <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">
+            {error}
+          </div>
         )}
 
         <section>
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
             Active
           </h2>
           {active.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-5 text-sm text-slate-600">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-sm text-slate-600 dark:text-slate-300">
               No active leagues.{' '}
-              <Link href="/create" className="text-blue-600 underline">
+              <Link href="/create" className="text-blue-600 dark:text-blue-400 underline">
                 Create one
               </Link>{' '}
               or{' '}
-              <Link href="/join" className="text-blue-600 underline">
+              <Link href="/join" className="text-blue-600 dark:text-blue-400 underline">
                 join with a code
               </Link>
               .
@@ -222,11 +241,11 @@ export default function CompetitionsPage() {
         </section>
 
         <section>
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
             History
           </h2>
           {finished.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-5 text-sm text-slate-600">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-sm text-slate-600 dark:text-slate-300">
               Finished and archived leagues will appear here.
             </div>
           ) : (
