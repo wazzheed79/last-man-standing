@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function CreateCompetitionPage() {
   const [name, setName] = useState('')
@@ -85,15 +86,23 @@ export default function CreateCompetitionPage() {
       month: 'short',
     })
 
+  const inputClass =
+    'w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white'
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-10">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Create Competition</h1>
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center px-4 py-10">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md w-full max-w-md border border-transparent dark:border-slate-700">
+        <h1 className="text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white">
+          Create Competition
+        </h1>
 
         {!joinCode ? (
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
                 Competition Name
               </label>
               <input
@@ -102,42 +111,46 @@ export default function CreateCompetitionPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="e.g. Office LMS 2026"
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Your display name <span className="text-gray-400 font-normal">(optional)</span>
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+                Your display name{' '}
+                <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Defaults to your email prefix"
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Prize / rules notes <span className="text-gray-400 font-normal">(optional)</span>
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+                Prize / rules notes{' '}
+                <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="e.g. £5 entry, winner takes the pot"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+                className={`${inputClass} text-sm resize-none`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Starting gameweek</label>
+              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+                Starting gameweek
+              </label>
               <select
                 value={startGameweek}
                 onChange={(e) => setStartGameweek(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className={inputClass}
               >
                 <option value="auto">Automatic — next gameweek that hasn't started</option>
                 {upcomingGameweeks.map((gw) => (
@@ -148,7 +161,7 @@ export default function CreateCompetitionPage() {
               </select>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-3">
+            <div className="border border-gray-200 dark:border-slate-600 rounded-lg p-3 bg-gray-50 dark:bg-slate-900/50 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -157,10 +170,10 @@ export default function CreateCompetitionPage() {
                   className="mt-1 h-4 w-4"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-gray-900">
+                  <span className="block text-sm font-medium text-gray-900 dark:text-slate-100">
                     Allow changing picks until first kick-off
                   </span>
-                  <span className="block text-xs text-gray-500 mt-0.5">
+                  <span className="block text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                     Players can change their team until the first match of the week starts.
                   </span>
                 </span>
@@ -173,17 +186,17 @@ export default function CreateCompetitionPage() {
                   className="mt-1 h-4 w-4"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-gray-900">
-                    Hide other players&apos; picks until first kick-off
+                  <span className="block text-sm font-medium text-gray-900 dark:text-slate-100">
+                    Hide other players' picks until first kick-off
                   </span>
-                  <span className="block text-xs text-gray-500 mt-0.5">
+                  <span className="block text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                     Stops people copying picks. Everyone can still see their own.
                   </span>
                 </span>
               </label>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
             <button
               type="submit"
@@ -195,9 +208,11 @@ export default function CreateCompetitionPage() {
           </form>
         ) : (
           <div className="text-center space-y-4">
-            <p className="text-green-600 font-medium">Competition created!</p>
-            <p className="text-sm text-gray-600">Share this join code with your friends:</p>
-            <div className="bg-gray-100 text-2xl font-bold py-4 rounded tracking-wider">
+            <p className="text-green-600 dark:text-green-400 font-medium">Competition created!</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">
+              Share this join code with your friends:
+            </p>
+            <div className="bg-gray-100 dark:bg-slate-900 text-2xl font-bold py-4 rounded tracking-wider text-slate-900 dark:text-white">
               {joinCode}
             </div>
             <button
@@ -208,7 +223,7 @@ export default function CreateCompetitionPage() {
             </button>
             <button
               onClick={() => router.push('/')}
-              className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300"
+              className="w-full bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-200 py-2 rounded hover:bg-gray-300 dark:hover:bg-slate-600"
             >
               Back to Home
             </button>
