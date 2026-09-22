@@ -4,40 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import TeamCrest from '@/components/TeamCrest'
-
-/** Short labels so names fit on narrow phone screens */
-function shortTeamName(name: string | null | undefined): string {
-  if (!name) return ''
-  const n = name
-    .replace(/ FC$/i, '')
-    .replace(/ AFC$/i, '')
-    .replace(/ and Hove Albion$/i, '')
-    .trim()
-
-  const map: Record<string, string> = {
-    'Manchester United': 'Man Utd',
-    'Manchester City': 'Man City',
-    'Tottenham Hotspur': 'Spurs',
-    'Nottingham Forest': "Nott'm Forest",
-    Brighton: 'Brighton',
-    'West Ham United': 'West Ham',
-    'Wolverhampton Wanderers': 'Wolves',
-    'Newcastle United': 'Newcastle',
-    'Leicester City': 'Leicester',
-    'Ipswich Town': 'Ipswich',
-    'Crystal Palace': 'Palace',
-    'AFC Bournemouth': 'Bournemouth',
-    Bournemouth: 'Bournemouth',
-    'Sheffield United': 'Sheffield Utd',
-    'Leeds United': 'Leeds',
-  }
-
-  if (map[n]) return map[n]
-  for (const [k, v] of Object.entries(map)) {
-    if (n.includes(k) || k.includes(n)) return v
-  }
-  return n
-}
+import { shortTeamName } from '@/lib/teamNames'
 
 export default function LeagueFixturesPage() {
   const params = useParams()
