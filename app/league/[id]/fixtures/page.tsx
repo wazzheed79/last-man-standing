@@ -18,8 +18,8 @@ function shortTeamName(name: string | null | undefined): string {
     'Manchester United': 'Man Utd',
     'Manchester City': 'Man City',
     'Tottenham Hotspur': 'Spurs',
-    'Nottingham Forest': 'Nott\'m Forest',
-    'Brighton': 'Brighton',
+    'Nottingham Forest': "Nott'm Forest",
+    Brighton: 'Brighton',
     'West Ham United': 'West Ham',
     'Wolverhampton Wanderers': 'Wolves',
     'Newcastle United': 'Newcastle',
@@ -27,13 +27,12 @@ function shortTeamName(name: string | null | undefined): string {
     'Ipswich Town': 'Ipswich',
     'Crystal Palace': 'Palace',
     'AFC Bournemouth': 'Bournemouth',
-    'Bournemouth': 'Bournemouth',
+    Bournemouth: 'Bournemouth',
     'Sheffield United': 'Sheffield Utd',
     'Leeds United': 'Leeds',
   }
 
   if (map[n]) return map[n]
-  // Partial matches
   for (const [k, v] of Object.entries(map)) {
     if (n.includes(k) || k.includes(n)) return v
   }
@@ -109,12 +108,11 @@ export default function LeagueFixturesPage() {
     const away = shortTeamName(f.away_team_name)
     const score =
       f.status === 'FINISHED' || f.home_score != null
-        ? `${f.home_score ?? 0}\u2013${f.away_score ?? 0}`
+        ? `${f.home_score ?? 0}-${f.away_score ?? 0}`
         : 'vs'
 
     return (
       <div key={f.match_id} className="px-3 py-3 sm:px-4">
-        {/* Mobile-friendly: crest + name on each side, full short names */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
           <div className="flex items-center gap-1.5 min-w-0 justify-start">
             <TeamCrest
@@ -150,11 +148,11 @@ export default function LeagueFixturesPage() {
         <p className="text-center text-[11px] text-slate-500 mt-1.5">
           {formatKickoff(f.utc_date)}
           {f.status === 'TIMED' || f.status === 'SCHEDULED'
-            ? ' \u00b7 Kick-off'
+            ? ' · Kick-off'
             : f.status === 'IN_PLAY' || f.status === 'LIVE' || f.status === 'PAUSED'
-            ? ' \u00b7 Live'
+            ? ' · Live'
             : f.status === 'FINISHED' || f.status === 'FT'
-            ? ' \u00b7 Full time'
+            ? ' · Full time'
             : ''}
         </p>
       </div>
@@ -167,7 +165,7 @@ export default function LeagueFixturesPage() {
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 font-semibold text-slate-800">
-          This week \u00b7 GW {gameweek}
+          This week · GW {gameweek}
         </div>
         <div className="divide-y divide-slate-100">
           {thisWeek.length ? (
@@ -180,7 +178,7 @@ export default function LeagueFixturesPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 font-semibold text-slate-800">
-          Next week \u00b7 GW {gameweek + 1}
+          Next week · GW {gameweek + 1}
         </div>
         <div className="divide-y divide-slate-100">
           {nextWeek.length ? (
