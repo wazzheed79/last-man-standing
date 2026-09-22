@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
@@ -14,7 +15,9 @@ export default function HomePage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       setUser(user)
       if (!user) {
         router.push('/login')
@@ -47,33 +50,42 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p className="text-slate-500">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <header className="bg-white border-b border-slate-200">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-lg mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Last Man Standing</h1>
-            <p className="text-xs text-slate-500">Premier League 2026/27</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+              Last Man Standing
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Premier League 2026/27
+            </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-slate-500 hover:text-slate-800"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={handleLogout}
+              className="text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8">
         <div className="mb-8">
-          <p className="text-sm text-slate-500">Signed in as</p>
-          <p className="font-medium text-slate-800 truncate">{user?.email}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Signed in as</p>
+          <p className="font-medium text-slate-800 dark:text-slate-100 truncate">
+            {user?.email}
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -93,18 +105,18 @@ export default function HomePage() {
 
           <Link
             href="/competitions"
-            className="block w-full text-center bg-white hover:bg-slate-50 text-slate-900 py-4 px-4 rounded-xl font-semibold border border-slate-200 shadow-sm transition"
+            className="block w-full text-center bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-white py-4 px-4 rounded-xl font-semibold border border-slate-200 dark:border-slate-600 shadow-sm transition"
           >
             My Leagues
             {activeCount > 0 && (
-              <span className="ml-2 text-sm font-normal text-slate-500">
+              <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
                 ({activeCount} active)
               </span>
             )}
           </Link>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-10">
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-10">
           Open a league to pick teams, view players, fixtures and results.
         </p>
       </main>
