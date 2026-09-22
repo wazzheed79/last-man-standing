@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import Countdown from '@/components/Countdown'
+import { shortTeamName } from '@/lib/teamNames'
 
 export default function LeaguePickPage() {
   const params = useParams()
@@ -34,7 +35,9 @@ export default function LeaguePickPage() {
     try {
       if (showLoading) setLoading(true)
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
@@ -91,7 +94,6 @@ export default function LeaguePickPage() {
       const thisWeek = allPicks.find((p: any) => p.gameweek === gw) || null
       setCurrentPick(thisWeek)
 
-      // Teams used in other weeks stay locked; current week pick can be swapped if allowed
       setUsedTeams(
         allPicks
           .filter((p: any) => p.gameweek !== gw)
@@ -221,7 +223,7 @@ export default function LeaguePickPage() {
           )}
           {currentPick && (
             <p className="text-xs text-blue-700 mt-1 font-medium">
-              Current pick: {currentPick.team_name}
+              Current pick: {shortTeamName(currentPick.team_name)}
               {canChangePick() ? ' — select another team to change' : ' — locked'}
             </p>
           )}
@@ -269,7 +271,7 @@ export default function LeaguePickPage() {
                           crest: f.home_team_crest,
                         })
                       }
-                      className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition ${
+                      className={`flex-1 flex items-center gap-2 px-2 sm:px-3 py-2.5 rounded-lg text-left text-xs sm:text-sm font-medium transition min-w-0 ${
                         homeSelected
                           ? 'bg-blue-600 text-white'
                           : homeUsed
@@ -278,14 +280,18 @@ export default function LeaguePickPage() {
                       }`}
                     >
                       {f.home_team_crest && (
-                        <img src={f.home_team_crest} alt="" className="w-6 h-6 object-contain" />
+                        <img
+                          src={f.home_team_crest}
+                          alt=""
+                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                        />
                       )}
-                      <span className="truncate">
-                        {f.home_team_name?.replace(' FC', '').replace(' AFC', '')}
+                      <span className="leading-tight" title={f.home_team_name}>
+                        {shortTeamName(f.home_team_name)}
                       </span>
                     </button>
 
-                    <div className="flex flex-col items-center min-w-[64px]">
+                    <div className="flex flex-col items-center min-w-[52px] sm:min-w-[64px] shrink-0">
                       <span
                         className={`text-sm font-bold ${
                           live ? 'text-red-600' : finished ? 'text-slate-900' : 'text-slate-400'
@@ -314,7 +320,7 @@ export default function LeaguePickPage() {
                           crest: f.away_team_crest,
                         })
                       }
-                      className={`flex-1 flex items-center justify-end gap-2 px-3 py-2.5 rounded-lg text-right text-sm font-medium transition ${
+                      className={`flex-1 flex items-center justify-end gap-2 px-2 sm:px-3 py-2.5 rounded-lg text-right text-xs sm:text-sm font-medium transition min-w-0 ${
                         awaySelected
                           ? 'bg-blue-600 text-white'
                           : awayUsed
@@ -322,11 +328,15 @@ export default function LeaguePickPage() {
                           : 'hover:bg-slate-50 text-slate-800'
                       }`}
                     >
-                      <span className="truncate">
-                        {f.away_team_name?.replace(' FC', '').replace(' AFC', '')}
+                      <span className="leading-tight" title={f.away_team_name}>
+                        {shortTeamName(f.away_team_name)}
                       </span>
                       {f.away_team_crest && (
-                        <img src={f.away_team_crest} alt="" className="w-6 h-6 object-contain" />
+                        <img
+                          src={f.away_team_crest}
+                          alt=""
+                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                        />
                       )}
                     </button>
                   </div>
@@ -345,7 +355,9 @@ export default function LeaguePickPage() {
             )}
             <div>
               <p className="text-xs text-blue-600 font-medium">Selected</p>
-              <p className="font-semibold text-slate-900">{selectedTeam.name}</p>
+              <p className="font-semibold text-slate-900">
+                {shortTeamName(selectedTeam.name)}
+              </p>
             </div>
           </div>
         ) : (
