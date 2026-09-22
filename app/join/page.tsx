@@ -3,9 +3,11 @@
 import { Suspense, useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import ThemeToggle from '@/components/ThemeToggle'
 
 function JoinCompetitionForm() {
   const [joinCode, setJoinCode] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -19,6 +21,36 @@ function JoinCompetitionForm() {
     if (code) setJoinCode(code.toUpperCase())
   }, [searchParams])
 
+  const finishJoin = async (code: string, data: any) => {
+    let competitionId =
+      data?.competition_id ||
+      data?.id ||
+      (Array.isArray(data) && data[0]?.competition_id) ||
+      (Array.isArray(data) && data[0]?.id) ||
+      null
+
+    let name = data?.name || (Array.isArray(data) && data[0]?.name) || null
+
+    if (!competitionId) {
+      const { data: comp } = await supabase
+        .from('competitions')
+        .select('id, name')
+        .eq('join_code', code)
+        .maybeSingle()
+      competitionId = comp?.id || null
+      name = name || comp?.name || null
+    }
+
+    if (!competitionId) {
+      throw new Error('Joined, but could not load the league. Open My Leagues.')
+    }
+
+    setMessage(
+      name ? `Successfully joined "${name}"!` : 'Successfully joined!'
+    )
+    setJoinedId(competitionId)
+  }
+
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -26,63 +58,61 @@ function JoinCompetitionForm() {
     setMessage('')
 
     try {
-      const code = joinCode.trim().toUpperCase()
-
-      const { data: competition, error: compError } = await supabase
-        .from('competitions')
-        .select('id, name')
-        .eq('join_code', code)
-        .single()
-
-      if (compError || !competition) {
-        throw new Error('Competition not found. Check the join code.')
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) throw new Error('You must be logged in')
 
-      const { data: existing } = await supabase
-        .from('competition_players')
-        .select('id')
-        .eq('competition_id', competition.id)
-        .eq('user_id', user.id)
-        .maybeSingle()
+      const code = joinCode.trim().toUpperCase()
 
-      if (existing) {
-        setMessage(`You have already joined "${competition.name}"`)
-        setJoinedId(competition.id)
-        return
+      // Trusted path — enforces open/active, membership, etc. server-side
+      const { data, error: rpcError } = await supabase.rpc('join_competition', {
+        p_join_code: code,
+        p_display_name: displayName.trim() || null,
+      })
+
+      if (rpcError) {
+        // Fallback if function was defined without p_ prefix
+        if (
+          rpcError.message?.includes('Could not find') ||
+          rpcError.message?.includes('schema cache') ||
+          rpcError.code === 'PGRST202'
+        ) {
+          const { data: data2, error: rpcError2 } = await supabase.rpc(
+            'join_competition',
+            {
+              join_code: code,
+              display_name: displayName.trim() || null,
+            }
+          )
+          if (rpcError2) throw rpcError2
+          await finishJoin(code, data2)
+          return
+        }
+        throw rpcError
       }
 
-      const displayName = user.email?.split('@')[0] || 'Player'
-
-      const { error: joinError } = await supabase
-        .from('competition_players')
-        .insert({
-          competition_id: competition.id,
-          user_id: user.id,
-          display_name: displayName
-        })
-
-      if (joinError) throw joinError
-
-      setMessage(`Successfully joined "${competition.name}"!`)
-      setJoinedId(competition.id)
+      await finishJoin(code, data)
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Unable to join')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Join Competition</h1>
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 flex items-center justify-center px-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md w-full max-w-md border border-transparent dark:border-slate-700">
+        <h1 className="text-2xl font-bold mb-6 text-center text-slate-900 dark:text-white">
+          Join Competition
+        </h1>
 
         <form onSubmit={handleJoin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
               Join Code
             </label>
             <input
@@ -91,12 +121,28 @@ function JoinCompetitionForm() {
               onChange={(e) => setJoinCode(e.target.value)}
               required
               placeholder="e.g. LMS-UKXH"
-              className="w-full border border-gray-300 rounded px-3 py-2 uppercase tracking-wider"
+              className="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 uppercase tracking-wider bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {message && <p className="text-sm text-green-600">{message}</p>}
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+              Your display name{' '}
+              <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Defaults to your email prefix"
+              className="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {message && (
+            <p className="text-sm text-green-600 dark:text-green-400">{message}</p>
+          )}
 
           {joinedId ? (
             <button
@@ -119,7 +165,7 @@ function JoinCompetitionForm() {
 
         <button
           onClick={() => router.push('/')}
-          className="w-full mt-4 bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300"
+          className="w-full mt-4 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-200 py-2 rounded hover:bg-gray-300 dark:hover:bg-slate-600"
         >
           Back to Home
         </button>
@@ -132,7 +178,7 @@ export default function JoinCompetitionPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
           <p className="text-slate-500">Loading...</p>
         </div>
       }
