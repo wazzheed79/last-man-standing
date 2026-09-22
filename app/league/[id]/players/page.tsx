@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import TeamCrest from '@/components/TeamCrest'
@@ -17,6 +17,8 @@ export default function LeaguePlayersPage() {
   const [winnerId, setWinnerId] = useState<string | null>(null)
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null)
   const [picksHidden, setPicksHidden] = useState(false)
+  const [currentGameweek, setCurrentGameweek] = useState<number>(1)
+  const [popularityGw, setPopularityGw] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -49,6 +51,8 @@ export default function LeaguePlayersPage() {
         .eq('id', leagueId)
         .single()
       setWinnerId(comp?.winner_player_id || null)
+      setCurrentGameweek(comp?.current_gameweek || 1)
+      setPopularityGw(comp?.current_gameweek || 1)
 
       let hidden = false
       if (comp?.hide_picks_until_ko) {
@@ -106,8 +110,31 @@ export default function LeaguePlayersPage() {
       .replace(' and Hove Albion', '')
       .trim()
 
-  if (loading) return <p className="text-slate-500 text-center">Loading players...</p>
-  if (error) return <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+  // Pick popularity for the selected gameweek. Only hidden when the selected
+  // gameweek is the current one and hide-until-kickoff is in effect — past
+  // gameweeks have already kicked off, so there's nothing left to protect there.
+  const popularityBlockedByPrivacy = picksHidden && popularityGw === currentGameweek
+
+  const popularity = useMemo(() => {
+    if (popularityBlockedByPrivacy || popularityGw === null) return []
+    const map = new Map<number, { team_id: number; team_name: string; count: number }>()
+    picks
+      .filter((p) => p.gameweek === popularityGw)
+      .forEach((p) => {
+        const existing = map.get(p.team_id)
+        if (existing) {
+          existing.count += 1
+        } else {
+          map.set(p.team_id, { team_id: p.team_id, team_name: p.team_name, count: 1 })
+        }
+      })
+    return Array.from(map.values()).sort((a, b) => b.count - a.count)
+  }, [picks, popularityGw, popularityBlockedByPrivacy])
+
+  const maxPopularity = popularity[0]?.count || 1
+
+  if (loading) return <p className="text-slate-500 dark:text-slate-400 text-center">Loading players...</p>
+  if (error) return <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">{error}</div>
 
   return (
     <div className="max-w-2xl mx-auto space-y-3">
@@ -116,6 +143,52 @@ export default function LeaguePlayersPage() {
           Other players&apos; picks are hidden until the first kick-off of this gameweek. You can still see your own.
         </p>
       )}
+
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 flex items-center gap-3">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm shrink-0">Pick popularity</h2>
+          <select
+            className="ml-auto border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm"
+            value={popularityGw ?? ''}
+            onChange={(e) => setPopularityGw(Number(e.target.value))}
+          >
+            {Array.from({ length: currentGameweek || 1 }, (_, i) => i + 1).map((gw) => (
+              <option key={gw} value={gw}>
+                GW{gw}{gw === currentGameweek ? ' (current)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {popularityBlockedByPrivacy ? (
+          <p className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
+            Hidden until the first kick-off of this gameweek.
+          </p>
+        ) : popularity.length === 0 ? (
+          <p className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">No picks made yet for this gameweek.</p>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            {popularity.map((c) => (
+              <div key={c.team_id} className="px-4 py-2.5">
+                <div className="flex items-center gap-3 mb-1">
+                  <TeamCrest src={crestMap[c.team_id]} className="w-5 h-5 object-contain shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                    {shortName(c.team_name)}
+                  </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0">{c.count}</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${Math.max(4, (c.count / maxPopularity) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700">
       {players.length === 0 && (
         <p className="p-5 text-slate-500 text-sm">No players in this league yet.</p>
