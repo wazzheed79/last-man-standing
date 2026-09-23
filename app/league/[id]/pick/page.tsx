@@ -6,6 +6,17 @@ import { useParams, useRouter } from 'next/navigation'
 import Countdown from '@/components/Countdown'
 import { shortTeamName } from '@/lib/teamNames'
 
+type SelectedTeam = {
+  id: number
+  name: string
+  crest?: string | null
+}
+
+type UsedTeam = {
+  id: number
+  name: string
+}
+
 export default function LeaguePickPage() {
   const params = useParams()
   const leagueId = params.id as string
@@ -15,10 +26,10 @@ export default function LeaguePickPage() {
   const [player, setPlayer] = useState<any>(null)
   const [comp, setComp] = useState<any>(null)
   const [fixtures, setFixtures] = useState<any[]>([])
-  const [usedTeams, setUsedTeams] = useState<number[]>([])
+  const [usedTeams, setUsedTeams] = useState<UsedTeam[]>([])
   const [currentPick, setCurrentPick] = useState<any>(null)
   const [deadline, setDeadline] = useState<Date | null>(null)
-  const [selectedTeam, setSelectedTeam] = useState<any>(null)
+  const [selectedTeam, setSelectedTeam] = useState<SelectedTeam | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
@@ -97,7 +108,7 @@ export default function LeaguePickPage() {
       setUsedTeams(
         allPicks
           .filter((p: any) => p.gameweek !== gw)
-          .map((p: any) => p.team_id)
+          .map((p: any) => ({ id: p.team_id as number, name: p.team_name as string }))
       )
     } catch (err: any) {
       setError(err.message)
@@ -107,21 +118,37 @@ export default function LeaguePickPage() {
   }
 
   const canChangePick = () => {
-    // Postponed picks can always be re-selected
     if (currentPick?.status === 'postponed') return true
-    if (comp?.allow_pick_changes === false) return false
+    if (comp?.allow_pick_changes === false && currentPick) return false
     if (!deadline) return true
     return new Date() < deadline
   }
 
+  const usedTeamIds = usedTeams.map((t) => t.id)
+  const isBurned = (teamId: number) => usedTeamIds.includes(teamId)
+
+  const hasUnsavedChanges =
+    !!selectedTeam &&
+    selectedTeam.id !== currentPick?.team_id &&
+    canChangePick()
+
+  const handleSelectTeam = (team: SelectedTeam) => {
+    if (isBurned(team.id)) return
+    if (!canChangePick() && currentPick) return
+    setSelectedTeam(team)
+    setMessage('')
+    setError('')
+  }
+
   const handlePick = async () => {
     if (!selectedTeam || !player || !comp) return
+    if (!hasUnsavedChanges) return
+
     setSubmitting(true)
     setError('')
     setMessage('')
 
     try {
-      // Param names must match the DB function (p_*)
       const { error } = await supabase.rpc('make_pick', {
         p_competition_id: leagueId,
         p_team_id: selectedTeam.id,
@@ -158,7 +185,7 @@ export default function LeaguePickPage() {
     return 'vs'
   }
 
-  if (loading) return <p className="text-slate-500 text-center">Loading...</p>
+  if (loading) return <p className="text-slate-500 text-center py-8">Loading...</p>
 
   if (player && player.status !== 'alive') {
     return (
@@ -182,12 +209,24 @@ export default function LeaguePickPage() {
     )
   }
 
+  const locked = !canChangePick()
+  const deadlineLabel = deadline
+    ? deadline.toLocaleString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-28">
+      {/* Refresh strip */}
       <div className="flex justify-between items-center px-1">
         <p className="text-xs text-slate-500">
           {lastUpdated
-            ? `Scores refresh every 30s · Updated ${lastUpdated.toLocaleTimeString()}`
+            ? `Scores refresh every 30s - Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading scores...'}
         </p>
         <button
@@ -199,197 +238,250 @@ export default function LeaguePickPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-          <h2 className="font-semibold text-slate-800">
-            Gameweek {comp?.current_gameweek} - click a team
-          </h2>
-          {deadline && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
-              <span>
-                First kick-off:{' '}
-                {deadline.toLocaleString(undefined, {
+      {/* Deadline + current pick card */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+        <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
+          <div className="flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+            {deadline ? <Countdown deadline={deadline} /> : <span>No deadline yet</span>}
+          </div>
+          {deadlineLabel && (
+            <span className="text-slate-400 text-[11px]">{deadlineLabel}</span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-0.5">
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">Current pick</p>
+            <p className="text-sm font-bold text-slate-800 truncate">
+              {currentPick
+                ? shortTeamName(currentPick.team_name)
+                : 'None yet'}
+              {currentPick && !locked && (
+                <span className="ml-1.5 text-emerald-600 font-semibold text-xs">
+                  saved
+                </span>
+              )}
+              {currentPick && locked && (
+                <span className="ml-1.5 text-slate-400 font-semibold text-xs">
+                  locked
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-slate-500">Rule</p>
+            <p className="text-xs font-semibold text-slate-700">
+              {comp?.allow_pick_changes === false
+                ? '1 pick - locked after'
+                : '1 pick - no reuse'}
+            </p>
+          </div>
+        </div>
+
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {message && <p className="text-emerald-600 text-sm">{message}</p>}
+      </div>
+
+      {/* Burned / unavailable teams */}
+      {usedTeams.length > 0 && (
+        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs">
+          <p className="font-semibold text-slate-600 mb-2">
+            Unavailable (already used)
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {usedTeams.map((t) => (
+              <span
+                key={t.id}
+                className="bg-white border border-slate-300 text-slate-400 line-through px-2 py-0.5 rounded-md text-[11px] font-medium"
+              >
+                {shortTeamName(t.name)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fixtures */}
+      <section className="space-y-3">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+          Gameweek {comp?.current_gameweek} - tap a team
+        </h2>
+
+        {fixtures.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">
+            No fixtures for this gameweek.
+          </div>
+        ) : (
+          fixtures.map((f) => {
+            const homeUsed = isBurned(f.home_team_id)
+            const awayUsed = isBurned(f.away_team_id)
+            const homeSelected = selectedTeam?.id === f.home_team_id
+            const awaySelected = selectedTeam?.id === f.away_team_id
+            const homeIsCurrent = currentPick?.team_id === f.home_team_id
+            const awayIsCurrent = currentPick?.team_id === f.away_team_id
+            const live = isLive(f.status)
+            const finished = isFinished(f.status)
+
+            const kickoffLabel = f.utc_date
+              ? new Date(f.utc_date).toLocaleString(undefined, {
                   weekday: 'short',
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',
                   minute: '2-digit',
-                })}
-              </span>
-              <Countdown deadline={deadline} />
-              <span>
-                {comp?.allow_pick_changes === false
-                  ? '· First pick is locked'
-                  : '· Changes allowed until lock'}
-              </span>
-            </p>
-          )}
-          {currentPick && (
-            <p className="text-xs text-blue-700 mt-1 font-medium">
-              Current pick: {shortTeamName(currentPick.team_name)}
-              {canChangePick() ? ' - select another team to change' : ' - locked'}
-            </p>
-          )}
-        </div>
+                })
+              : ''
 
-        <div className="divide-y divide-slate-100">
-          {fixtures.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-slate-500">No fixtures for this gameweek.</p>
-          ) : (
-            fixtures.map((f) => {
-              const homeUsed = usedTeams.includes(f.home_team_id)
-              const awayUsed = usedTeams.includes(f.away_team_id)
-              const homeSelected = selectedTeam?.id === f.home_team_id
-              const awaySelected = selectedTeam?.id === f.away_team_id
-              const live = isLive(f.status)
-              const finished = isFinished(f.status)
-
-              const kickoffLabel = f.utc_date
-                ? new Date(f.utc_date).toLocaleString(undefined, {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
+            const teamButton = (
+              side: 'home' | 'away',
+              teamId: number,
+              teamName: string,
+              crest: string | null,
+              used: boolean,
+              selected: boolean,
+              isCurrent: boolean
+            ) => (
+              <button
+                type="button"
+                disabled={used || (locked && !isCurrent)}
+                onClick={() =>
+                  handleSelectTeam({
+                    id: teamId,
+                    name: teamName,
+                    crest,
                   })
-                : ''
+                }
+                className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all touch-manipulation active:scale-[0.98] min-h-[96px] ${
+                  used
+                    ? 'opacity-40 bg-slate-50 border-dashed border-slate-200 cursor-not-allowed'
+                    : selected
+                    ? 'bg-emerald-50 border-emerald-500 shadow-sm'
+                    : isCurrent
+                    ? 'bg-blue-50 border-blue-300'
+                    : 'bg-white border-slate-100 hover:border-slate-200'
+                }`}
+              >
+                {selected && (
+                  <span className="absolute top-1.5 right-1.5 text-emerald-600 text-[10px] font-bold">
+                    OK
+                  </span>
+                )}
+                {used && (
+                  <span className="absolute top-1.5 right-1.5 text-slate-400 text-[10px] font-bold">
+                    Used
+                  </span>
+                )}
+                {crest && (
+                  <img
+                    src={crest}
+                    alt=""
+                    className="w-9 h-9 object-contain mb-1.5"
+                  />
+                )}
+                <span
+                  className="text-xs font-bold text-slate-800 leading-tight"
+                  title={teamName}
+                >
+                  {shortTeamName(teamName)}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                  {side === 'home' ? 'Home' : 'Away'}
+                </span>
+              </button>
+            )
 
-              return (
-                <div key={f.match_id} className="px-3 py-3">
-                  {kickoffLabel && (
-                    <p className="text-center text-[11px] text-slate-500 mb-1.5">
-                      {kickoffLabel}
-                      {live ? ' · LIVE' : finished ? ' · FT' : ' · Kick-off'}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={homeUsed}
-                      onClick={() =>
-                        !homeUsed &&
-                        setSelectedTeam({
-                          id: f.home_team_id,
-                          name: f.home_team_name,
-                          crest: f.home_team_crest,
-                        })
-                      }
-                      className={`flex-1 flex items-center gap-2 px-2 sm:px-3 py-2.5 rounded-lg text-left text-xs sm:text-sm font-medium transition min-w-0 ${
-                        homeSelected
-                          ? 'bg-blue-600 text-white'
-                          : homeUsed
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          : 'hover:bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      {f.home_team_crest && (
-                        <img
-                          src={f.home_team_crest}
-                          alt=""
-                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
-                        />
-                      )}
-                      <span className="leading-tight" title={f.home_team_name}>
-                        {shortTeamName(f.home_team_name)}
-                      </span>
-                    </button>
-
-                    <div className="flex flex-col items-center min-w-[52px] sm:min-w-[64px] shrink-0">
-                      <span
-                        className={`text-sm font-bold ${
-                          live ? 'text-red-600' : finished ? 'text-slate-900' : 'text-slate-400'
-                        }`}
-                      >
-                        {scoreLabel(f)}
-                      </span>
-                      {live && (
-                        <span className="text-[10px] font-bold text-red-600 animate-pulse">
-                          LIVE
-                        </span>
-                      )}
-                      {finished && (
-                        <span className="text-[10px] font-medium text-slate-400">FT</span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={awayUsed}
-                      onClick={() =>
-                        !awayUsed &&
-                        setSelectedTeam({
-                          id: f.away_team_id,
-                          name: f.away_team_name,
-                          crest: f.away_team_crest,
-                        })
-                      }
-                      className={`flex-1 flex items-center justify-end gap-2 px-2 sm:px-3 py-2.5 rounded-lg text-right text-xs sm:text-sm font-medium transition min-w-0 ${
-                        awaySelected
-                          ? 'bg-blue-600 text-white'
-                          : awayUsed
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          : 'hover:bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      <span className="leading-tight" title={f.away_team_name}>
-                        {shortTeamName(f.away_team_name)}
-                      </span>
-                      {f.away_team_crest && (
-                        <img
-                          src={f.away_team_crest}
-                          alt=""
-                          className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
-                        />
-                      )}
-                    </button>
-                  </div>
+            return (
+              <div
+                key={f.match_id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+              >
+                <div className="bg-slate-50 border-b border-slate-100 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                  <span>
+                    {kickoffLabel}
+                    {live ? ' - LIVE' : finished ? ' - FT' : ''}
+                  </span>
+                  <span
+                    className={`font-bold ${
+                      live
+                        ? 'text-red-600'
+                        : finished
+                        ? 'text-slate-800'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    {scoreLabel(f)}
+                    {live && (
+                      <span className="ml-1 animate-pulse text-[10px]">LIVE</span>
+                    )}
+                  </span>
                 </div>
-              )
-            })
-          )}
-        </div>
-      </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-        {selectedTeam ? (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-lg">
-            {selectedTeam.crest && (
-              <img src={selectedTeam.crest} alt="" className="w-8 h-8 object-contain" />
-            )}
-            <div>
-              <p className="text-xs text-blue-600 font-medium">Selected</p>
-              <p className="font-semibold text-slate-900">
-                {shortTeamName(selectedTeam.name)}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500 mb-4">Select a team above.</p>
+                <div className="grid grid-cols-2 gap-2 p-2">
+                  {teamButton(
+                    'home',
+                    f.home_team_id,
+                    f.home_team_name,
+                    f.home_team_crest,
+                    homeUsed,
+                    homeSelected,
+                    homeIsCurrent
+                  )}
+                  {teamButton(
+                    'away',
+                    f.away_team_id,
+                    f.away_team_name,
+                    f.away_team_crest,
+                    awayUsed,
+                    awaySelected,
+                    awayIsCurrent
+                  )}
+                </div>
+              </div>
+            )
+          })
         )}
+      </section>
 
-        {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-        {message && <p className="text-emerald-600 text-sm mb-3">{message}</p>}
+      {/* Sticky confirm bar */}
+      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md p-4 shadow-lg">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
+              {hasUnsavedChanges ? 'Selected pick' : currentPick ? 'Locked in' : 'Select a team'}
+            </span>
+            <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+              {selectedTeam
+                ? shortTeamName(selectedTeam.name)
+                : currentPick
+                ? shortTeamName(currentPick.team_name)
+                : 'None selected'}
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={handlePick}
-          disabled={
-            !selectedTeam ||
-            submitting ||
-            (currentPick && !canChangePick()) ||
-            (currentPick && selectedTeam?.id === currentPick.team_id)
-          }
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-medium"
-        >
-          {submitting
-            ? 'Saving...'
-            : currentPick && canChangePick()
-            ? 'Change Pick'
-            : currentPick && !canChangePick()
-            ? 'Pick locked'
-            : 'Confirm Pick'}
-        </button>
-      </div>
+          <button
+            type="button"
+            disabled={!hasUnsavedChanges || submitting}
+            onClick={handlePick}
+            className={`shrink-0 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-sm ${
+              hasUnsavedChanges && !submitting
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {submitting
+              ? 'Saving...'
+              : locked && currentPick
+              ? 'Pick locked'
+              : hasUnsavedChanges
+              ? currentPick
+                ? 'Change pick'
+                : 'Confirm pick'
+              : currentPick
+              ? 'Locked in'
+              : 'Confirm pick'}
+          </button>
+        </div>
+      </aside>
     </div>
   )
 }
