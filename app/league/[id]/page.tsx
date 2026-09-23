@@ -92,7 +92,7 @@ export default function LeagueOverviewPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('Could not copy — select the code manually')
+      setError('Could not copy â€” select the code manually')
     }
   }
 
@@ -225,7 +225,7 @@ export default function LeagueOverviewPage() {
               )}
               {me.status === 'eliminated' && (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white">
-                  Out{me.eliminated_gameweek ? ` · GW${me.eliminated_gameweek}` : ''}
+                  Out{me.eliminated_gameweek ? ` Â· GW${me.eliminated_gameweek}` : ''}
                 </span>
               )}
               {winner?.id === me.id && (

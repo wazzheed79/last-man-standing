@@ -187,7 +187,7 @@ export default function LeaguePickPage() {
       <div className="flex justify-between items-center px-1">
         <p className="text-xs text-slate-500">
           {lastUpdated
-            ? `Scores refresh every 30s · Updated ${lastUpdated.toLocaleTimeString()}`
+            ? `Scores refresh every 30s Â· Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading scores...'}
         </p>
         <button
@@ -202,7 +202,7 @@ export default function LeaguePickPage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
           <h2 className="font-semibold text-slate-800">
-            Gameweek {comp?.current_gameweek} — click a team
+            Gameweek {comp?.current_gameweek} â€” click a team
           </h2>
           {deadline && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center">
@@ -219,15 +219,15 @@ export default function LeaguePickPage() {
               <Countdown deadline={deadline} />
               <span>
                 {comp?.allow_pick_changes === false
-                  ? '· First pick is locked'
-                  : '· Changes allowed until lock'}
+                  ? 'Â· First pick is locked'
+                  : 'Â· Changes allowed until lock'}
               </span>
             </p>
           )}
           {currentPick && (
             <p className="text-xs text-blue-700 mt-1 font-medium">
               Current pick: {shortTeamName(currentPick.team_name)}
-              {canChangePick() ? ' — select another team to change' : ' — locked'}
+              {canChangePick() ? ' â€” select another team to change' : ' â€” locked'}
             </p>
           )}
         </div>
@@ -259,7 +259,7 @@ export default function LeaguePickPage() {
                   {kickoffLabel && (
                     <p className="text-center text-[11px] text-slate-500 mb-1.5">
                       {kickoffLabel}
-                      {live ? ' · LIVE' : finished ? ' · FT' : ' · Kick-off'}
+                      {live ? ' Â· LIVE' : finished ? ' Â· FT' : ' Â· Kick-off'}
                     </p>
                   )}
                   <div className="flex items-center gap-2">
