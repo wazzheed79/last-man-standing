@@ -43,3 +43,5 @@ next-env.d.ts
 *.zip
 .github.zip
 
+
+supabase/.temp/
