@@ -87,11 +87,11 @@ export default function ThreeDBadge({ size = 'md' }: ThreeDBadgeProps) {
           }}
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-200 via-amber-500 to-yellow-800 shadow-[0_18px_45px_rgba(0,0,0,0.55)] [transform:translateZ(-18px)]" />
-          {Array.from({ length: 9 }).map((_, i) => (
+          {Array.from({ length: 15 }).map((_, i) => (
             <div
               key={i}
-              className="absolute inset-0 rounded-full border border-yellow-300/70 bg-gradient-to-br from-amber-300 via-yellow-500 to-amber-700"
-              style={{ transform: `translateZ(${-16 + i * 2}px)` }}
+              className="absolute inset-0 rounded-full border border-yellow-200/80 bg-gradient-to-br from-yellow-200 via-amber-400 to-amber-800 shadow-[inset_0_0_8px_rgba(255,255,255,.25)]"
+              style={{ transform: `translateZ(${-16 + i * 3}px)` }}
             />
           ))}
           <div
