@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LeagueOverviewPage() {
   const params = useParams()
@@ -22,6 +23,11 @@ export default function LeagueOverviewPage() {
   const [leaving, setLeaving] = useState(false)
   const [copied, setCopied] = useState(false)
   const [joinUrl, setJoinUrl] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [pickedIds, setPickedIds] = useState<Set<string>>(new Set())
+  const [allPicks, setAllPicks] = useState<any[]>([])
+  const [deadline, setDeadline] = useState<Date | null>(null)
+  const [notifMsg, setNotifMsg] = useState('')
 
   useEffect(() => {
     load()
@@ -36,6 +42,7 @@ export default function LeagueOverviewPage() {
         router.push('/login')
         return
       }
+      setUserId(user.id)
 
       const { data: competition, error: cErr } = await supabase
         .from('competitions')
@@ -69,14 +76,35 @@ export default function LeagueOverviewPage() {
         setWinner(list.find((p) => p.id === competition.winner_player_id) || null)
       }
 
+      const gw = competition.current_gameweek
+
+      const { data: gwFixtures } = await supabase
+        .from('fixtures_cache')
+        .select('utc_date')
+        .eq('matchday', gw)
+        .order('utc_date')
+      if (gwFixtures && gwFixtures.length > 0) {
+        setDeadline(new Date(gwFixtures[0].utc_date))
+      }
+
+      const { data: picksData } = await supabase
+        .from('picks')
+        .select('*')
+        .eq('competition_id', leagueId)
+      setAllPicks(picksData || [])
+
+      const thisGwPicked = new Set(
+        (picksData || [])
+          .filter((p: any) => p.gameweek === gw)
+          .map((p: any) => p.player_id as string)
+      )
+      setPickedIds(thisGwPicked)
+
       if (mine) {
-        const { data: pick } = await supabase
-          .from('picks')
-          .select('*')
-          .eq('player_id', mine.id)
-          .eq('gameweek', competition.current_gameweek)
-          .maybeSingle()
-        setMyPick(pick)
+        const pick = (picksData || []).find(
+          (p: any) => p.player_id === mine.id && p.gameweek === gw
+        )
+        setMyPick(pick || null)
       }
     } catch (err: any) {
       setError(err.message)
@@ -118,11 +146,97 @@ export default function LeagueOverviewPage() {
     }
   }
 
+  const exportCsv = () => {
+    const byPlayer = new Map<string, any[]>()
+    allPicks.forEach((p) => {
+      const list = byPlayer.get(p.player_id) || []
+      list.push(p)
+      byPlayer.set(p.player_id, list)
+    })
+    const maxGw = Math.max(
+      0,
+      ...allPicks.map((p) => p.gameweek || 0),
+      comp?.current_gameweek || 0
+    )
+    const headers = ['Player', 'Status', 'Eliminated GW']
+    for (let g = 1; g <= maxGw; g++) headers.push(`GW${g}`)
+    const rows = [headers.join(',')]
+    players.forEach((pl) => {
+      const picks = (byPlayer.get(pl.id) || []).sort(
+        (a, b) => a.gameweek - b.gameweek
+      )
+      const byGw = new Map(picks.map((p) => [p.gameweek, p.team_name]))
+      const cols = [
+        `"${(pl.display_name || '').replace(/"/g, '""')}"`,
+        pl.status,
+        pl.eliminated_gameweek ?? '',
+      ]
+      for (let g = 1; g <= maxGw; g++) {
+        cols.push(`"${(byGw.get(g) || '').replace(/"/g, '""')}"`)
+      }
+      rows.push(cols.join(','))
+    })
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${(comp?.name || 'league').replace(/\s+/g, '-')}-picks.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const shareAlive = async () => {
+    const text = me?.status === 'alive'
+      ? `Still alive in ${comp?.name} — Last Man Standing GW${comp?.current_gameweek}!`
+      : `I went out in GW${me?.eliminated_gameweek || '?'} in ${comp?.name}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Last Man Standing', text, url: joinUrl || window.location.href })
+      } else {
+        await navigator.clipboard.writeText(text)
+        setNotifMsg('Status copied to clipboard')
+        setTimeout(() => setNotifMsg(''), 2000)
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  const enableReminders = async () => {
+    if (!('Notification' in window)) {
+      setNotifMsg('Notifications not supported on this browser')
+      return
+    }
+    const perm = await Notification.requestPermission()
+    if (perm !== 'granted') {
+      setNotifMsg('Notification permission denied')
+      return
+    }
+    localStorage.setItem(`lms-remind-${leagueId}`, '1')
+    setNotifMsg('Reminders enabled on this device')
+    setTimeout(() => setNotifMsg(''), 2500)
+
+    // Schedule a simple local reminder if deadline is in the future
+    if (deadline && deadline.getTime() > Date.now() && !myPick && me?.status === 'alive') {
+      const ms = deadline.getTime() - Date.now() - 2 * 60 * 60 * 1000
+      if (ms > 0 && ms < 7 * 24 * 60 * 60 * 1000) {
+        setTimeout(() => {
+          if (localStorage.getItem(`lms-remind-${leagueId}`) === '1') {
+            new Notification('Last Man Standing', {
+              body: `Pick deadline soon for ${comp?.name || 'your league'} (GW${comp?.current_gameweek})`,
+              icon: '/icon.svg',
+            })
+          }
+        }, ms)
+      }
+    }
+  }
+
   if (loading) {
     return <p className="text-slate-500 text-center">Loading overview...</p>
   }
 
-  if (error) {
+  if (error && !comp) {
     return <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
   }
 
@@ -138,12 +252,61 @@ export default function LeagueOverviewPage() {
     .filter((p) => p.status === 'eliminated')
     .sort((a, b) => (a.eliminated_gameweek || 99) - (b.eliminated_gameweek || 99))
 
+  const isCreator = comp?.created_by === userId
+  const needsPick =
+    me?.status === 'alive' &&
+    !myPick &&
+    ['open', 'active'].includes(comp?.status) &&
+    (!deadline || deadline.getTime() > Date.now())
+
+  const notPickedAlive = alive.filter((p) => !pickedIds.has(p.id))
+  const pickedAlive = alive.filter((p) => pickedIds.has(p.id))
+
   const qrSrc = joinUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(joinUrl)}`
     : ''
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      {notifMsg && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-sm">
+          {notifMsg}
+        </div>
+      )}
+
+      {/* Missed / no pick banner */}
+      {needsPick && (
+        <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
+              You haven't picked for Gameweek {comp?.current_gameweek}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-200/80 mt-0.5">
+              {deadline
+                ? `Deadline: ${deadline.toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}`
+                : 'Pick before the first kick-off'}
+            </p>
+          </div>
+          <Link
+            href={`/league/${leagueId}/pick`}
+            className="shrink-0 text-center bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+          >
+            Make pick
+          </Link>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
         <div className="flex flex-wrap gap-2 mb-4">
           <span
@@ -168,13 +331,36 @@ export default function LeagueOverviewPage() {
             {joinUrl && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-all">{joinUrl}</p>
             )}
-            <button
-              type="button"
-              onClick={copyJoin}
-              className="mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {copied ? 'Copied!' : 'Copy join link'}
-            </button>
+            <div className="flex flex-wrap gap-3 mt-2">
+              <button
+                type="button"
+                onClick={copyJoin}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                {copied ? 'Copied!' : 'Copy join link'}
+              </button>
+              <button
+                type="button"
+                onClick={shareAlive}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Share my status
+              </button>
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={enableReminders}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Enable pick reminders
+              </button>
+            </div>
           </div>
           {qrSrc && (
             <div className="shrink-0 text-center">
@@ -239,7 +425,7 @@ export default function LeagueOverviewPage() {
               <div className="text-sm text-slate-600 dark:text-slate-300">
                 {myPick ? (
                   <p>
-                    This week&apos;s pick:{' '}
+                    This week's pick:{' '}
                     <span className="font-semibold text-slate-900 dark:text-white">
                       {myPick.team_name}
                     </span>
@@ -267,6 +453,52 @@ export default function LeagueOverviewPage() {
           </button>
         )}
       </div>
+
+      {/* Creator: who has / hasn't picked */}
+      {isCreator && ['open', 'active'].includes(comp?.status) && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+            GW{comp?.current_gameweek} pick status (creator)
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">
+                Picked ({pickedAlive.length})
+              </p>
+              {pickedAlive.length === 0 ? (
+                <p className="text-slate-400 text-xs">Nobody yet</p>
+              ) : (
+                <ul className="space-y-1">
+                  {pickedAlive.map((p) => (
+                    <li key={p.id} className="text-slate-800 dark:text-slate-200">
+                      {p.display_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                Not picked ({notPickedAlive.length})
+              </p>
+              {notPickedAlive.length === 0 ? (
+                <p className="text-slate-400 text-xs">Everyone has picked</p>
+              ) : (
+                <ul className="space-y-1">
+                  {notPickedAlive.map((p) => (
+                    <li key={p.id} className="text-slate-800 dark:text-slate-200">
+                      {p.display_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-3">
+            Team names stay hidden here if "hide picks until KO" is on — only pick status is shown.
+          </p>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
