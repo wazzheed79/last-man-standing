@@ -5,17 +5,16 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
-import ThreeDBadge from '@/components/ThreeDBadge'
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeCount, setActiveCount] = useState(0)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     const init = async () => {
+      const supabase = createClient()
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -44,6 +43,7 @@ export default function HomePage() {
   }, [])
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -82,8 +82,12 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8">
-        <div className="mb-6">
-          <ThreeDBadge size="md" />
+        <div className="mb-6 flex justify-center">
+          <img
+            src="/last-man-standing-badge.svg"
+            alt="Last Man Standing"
+            className="h-64 w-64 max-w-full object-contain"
+          />
         </div>
 
         <div className="mb-8">
