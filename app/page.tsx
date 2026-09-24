@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import ThemeToggle from '@/components/ThemeToggle'\nimport ThreeDBadge from '@/components/ThreeDBadge'
+import ThemeToggle from '@/components/ThemeToggle'
+import ThreeDBadge from '@/components/ThreeDBadge'
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
