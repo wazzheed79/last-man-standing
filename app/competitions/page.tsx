@@ -60,7 +60,11 @@ export default function CompetitionsPage() {
 
   const handleArchive = async (competitionId: string, competitionName: string) => {
     const confirmed = window.confirm(
-      `Archive "${competitionName}"?\n\nHistory (picks, eliminations) will be kept.`
+      `Archive "${competitionName}"?\n\n` +
+        `• League moves to History\n` +
+        `• All picks and eliminations are kept\n` +
+        `• Players can still open and view it\n` +
+        `• You can permanently delete it later from History`
     )
     if (!confirmed) return
 
@@ -81,7 +85,10 @@ export default function CompetitionsPage() {
 
   const handleDelete = async (competitionId: string, competitionName: string) => {
     const confirmed = window.confirm(
-      `Permanently delete "${competitionName}"?\n\nThis removes all players and pick history and cannot be undone.`
+      `Permanently delete "${competitionName}"?\n\n` +
+        `This CANNOT be undone.\n` +
+        `All players, picks and history will be removed.\n\n` +
+        `Prefer Archive if you only want it off the Active list.`
     )
     if (!confirmed) return
 
@@ -169,9 +176,10 @@ export default function CompetitionsPage() {
                 type="button"
                 onClick={() => handleArchive(comp.id, comp.name)}
                 disabled={archivingId === comp.id}
+                title="Keeps history; moves to History list"
                 className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 disabled:opacity-50"
               >
-                {archivingId === comp.id ? 'Archiving...' : 'Archive'}
+                {archivingId === comp.id ? 'Archiving...' : 'Archive (keep history)'}
               </button>
             )}
             {showDelete && (
@@ -179,9 +187,10 @@ export default function CompetitionsPage() {
                 type="button"
                 onClick={() => handleDelete(comp.id, comp.name)}
                 disabled={deletingId === comp.id}
+                title="Permanently removes all data"
                 className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
               >
-                {deletingId === comp.id ? 'Deleting...' : 'Delete'}
+                {deletingId === comp.id ? 'Deleting...' : 'Delete forever'}
               </button>
             )}
           </div>
@@ -244,6 +253,9 @@ export default function CompetitionsPage() {
           <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
             History
           </h2>
+          <p className="text-xs text-slate-400 mb-3">
+            Finished and archived leagues. Archive keeps picks; Delete forever removes everything.
+          </p>
           {finished.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-sm text-slate-600 dark:text-slate-300">
               Finished and archived leagues will appear here.
