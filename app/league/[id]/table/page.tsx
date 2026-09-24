@@ -8,6 +8,7 @@ export default function LeagueTablePage() {
   const [finishedFixtures, setFinishedFixtures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -55,7 +56,6 @@ export default function LeagueTablePage() {
   }
 
   const getTeamForm = (teamId: number, teamName: string) => {
-    // All finished games for this team, newest first
     const matches = finishedFixtures
       .filter((f) => {
         if (f.home_team_id === teamId || f.away_team_id === teamId) return true
@@ -67,9 +67,7 @@ export default function LeagueTablePage() {
         (a, b) =>
           new Date(b.utc_date).getTime() - new Date(a.utc_date).getTime()
       )
-      // Only the last 5 results — oldest drops off when a 6th arrives
       .slice(0, 5)
-      // Display left → right as oldest → newest (usual form style)
       .reverse()
 
     return matches.map((match) => {
@@ -86,13 +84,13 @@ export default function LeagueTablePage() {
 
       return {
         result,
-        label: result + ' ' + teamScore + '-' + oppScore + ' vs ' + clean(opponent),
+        label: `${result} ${teamScore}-${oppScore} vs ${clean(opponent)}`,
       }
     })
   }
 
   if (loading) {
-    return <p className="text-slate-500 text-center">Loading table...</p>
+    return <p className="text-slate-500 text-center text-sm">Loading table...</p>
   }
   if (error) {
     return (
@@ -101,28 +99,42 @@ export default function LeagueTablePage() {
   }
   if (!standings.length) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-slate-600 text-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center text-slate-600 dark:text-slate-300 text-sm">
         No standings data yet.
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      {/* Floating tooltip — not clipped by table overflow */}
+      {tip && (
+        <div
+          className="fixed z-50 pointer-events-none bg-slate-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap"
+          style={{ left: tip.x, top: tip.y, transform: 'translate(-50%, -110%)' }}
+        >
+          {tip.text}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[11px] sm:text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
-              <th className="text-left py-3 px-3">#</th>
-              <th className="text-left py-3 px-3">Team</th>
-              <th className="text-center py-3 px-2">P</th>
-              <th className="text-center py-3 px-2">W</th>
-              <th className="text-center py-3 px-2">D</th>
-              <th className="text-center py-3 px-2">L</th>
-              <th className="text-center py-3 px-2">GF</th>
-              <th className="text-center py-3 px-2">GA</th>
-              <th className="text-center py-3 px-2">GD</th>
-              <th className="text-center py-3 px-2 font-bold">Pts</th>
+            <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+              <th className="text-left py-2 pl-2 pr-1 font-semibold w-7">#</th>
+              <th className="text-left py-2 px-1 font-semibold min-w-[9rem]">Team</th>
+              <th className="text-center py-2 px-1 font-semibold w-7">P</th>
+              <th className="text-center py-2 px-1 font-semibold w-7">W</th>
+              <th className="text-center py-2 px-1 font-semibold w-7">D</th>
+              <th className="text-center py-2 px-1 font-semibold w-7">L</th>
+              <th className="text-center py-2 px-1 font-semibold w-7 hidden xs:table-cell sm:table-cell">
+                GF
+              </th>
+              <th className="text-center py-2 px-1 font-semibold w-7 hidden sm:table-cell">
+                GA
+              </th>
+              <th className="text-center py-2 px-1 font-semibold w-8">GD</th>
+              <th className="text-center py-2 pl-1 pr-2 font-bold w-8">Pts</th>
             </tr>
           </thead>
           <tbody>
@@ -133,69 +145,89 @@ export default function LeagueTablePage() {
               const form = getTeamForm(teamId, teamName)
 
               return (
-                <tr key={teamId} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-3 px-3 font-semibold align-top">
+                <tr
+                  key={teamId}
+                  className="border-b border-slate-100 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                >
+                  <td className="py-1.5 pl-2 pr-1 font-semibold text-slate-700 dark:text-slate-200 align-middle">
                     {row.position ?? row.rank}
                   </td>
-                  <td className="py-3 px-3">
-                    <div className="flex items-center gap-2 mb-1.5">
+                  <td className="py-1.5 px-1 align-middle">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {(team.crest || team.team_crest) && (
                         <img
                           src={team.crest || team.team_crest}
                           alt=""
-                          className="w-5 h-5 object-contain"
+                          className="w-4 h-4 object-contain shrink-0"
                         />
                       )}
-                      <span className="font-medium whitespace-nowrap">
+                      <span className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[7rem] sm:max-w-[10rem]">
                         {team.shortName || clean(team.name)}
                       </span>
                     </div>
-                    <div className="flex gap-1 flex-wrap">
-                      {form.map((f, i) => (
-                        <span
-                          key={i}
-                          title={f.label}
-                          className={
-                            'relative group w-6 h-6 rounded-full text-[11px] font-bold text-white flex items-center justify-center cursor-default ' +
-                            (f.result === 'W'
-                              ? 'bg-emerald-500'
-                              : f.result === 'D'
-                              ? 'bg-slate-400'
-                              : 'bg-red-500')
-                          }
-                        >
-                          {f.result}
-                          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 whitespace-nowrap">
-                            <span className="bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg">
-                              {f.label}
-                            </span>
-                          </span>
-                        </span>
-                      ))}
-                    </div>
+                    {/* Form: always one row, no wrap */}
+                    {form.length > 0 && (
+                      <div className="flex flex-nowrap gap-0.5 mt-1 ml-5">
+                        {form.map((f, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            title={f.label}
+                            onMouseEnter={(e) => {
+                              const r = (e.target as HTMLElement).getBoundingClientRect()
+                              setTip({
+                                text: f.label,
+                                x: r.left + r.width / 2,
+                                y: r.top,
+                              })
+                            }}
+                            onMouseLeave={() => setTip(null)}
+                            onFocus={(e) => {
+                              const r = (e.target as HTMLElement).getBoundingClientRect()
+                              setTip({
+                                text: f.label,
+                                x: r.left + r.width / 2,
+                                y: r.top,
+                              })
+                            }}
+                            onBlur={() => setTip(null)}
+                            className={
+                              'w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ' +
+                              (f.result === 'W'
+                                ? 'bg-emerald-500'
+                                : f.result === 'D'
+                                ? 'bg-slate-400'
+                                : 'bg-red-500')
+                            }
+                          >
+                            {f.result}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300">
                     {row.playedGames ?? row.played}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300">
                     {row.won ?? row.wins}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300">
                     {row.draw ?? row.draws}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300">
                     {row.lost ?? row.losses}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300 hidden sm:table-cell">
                     {row.goalsFor ?? row.gf}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300 hidden sm:table-cell">
                     {row.goalsAgainst ?? row.ga}
                   </td>
-                  <td className="text-center py-3 px-2 align-top">
+                  <td className="text-center py-1.5 px-1 align-middle text-slate-700 dark:text-slate-300">
                     {row.goalDifference ?? row.gd}
                   </td>
-                  <td className="text-center py-3 px-2 font-bold align-top">
+                  <td className="text-center py-1.5 pl-1 pr-2 font-bold align-middle text-slate-900 dark:text-white">
                     {row.points ?? row.pts}
                   </td>
                 </tr>
@@ -204,8 +236,8 @@ export default function LeagueTablePage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-slate-400 px-4 py-2 border-t border-slate-100">
-        Hover over W / D / L to see score and opponent
+      <p className="text-[10px] text-slate-400 dark:text-slate-500 px-3 py-1.5 border-t border-slate-100 dark:border-slate-700">
+        Hover or long-press W / D / L for score and opponent · Form is last 5 (oldest → newest)
       </p>
     </div>
   )
