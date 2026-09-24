@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs>
+ <radialGradient id="bg"><stop stop-color="#263b58"/><stop offset=".72" stop-color="#0b1526"/><stop offset="1" stop-color="#050b15"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a6"/><stop offset=".25" stop-color="#d89b22"/><stop offset=".55" stop-color="#fff1a2"/><stop offset="1" stop-color="#9b6512"/></linearGradient>
+ <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".45" stop-color="#cbd2dc"/><stop offset="1" stop-color="#7f8997"/></linearGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-opacity=".5"/></filter>
+ <clipPath id="disc"><circle cx="400" cy="400" r="350"/></clipPath>
+</defs>
+<circle cx="400" cy="400" r="382" fill="#050914" stroke="#6b4b16" stroke-width="12"/>
+<circle cx="400" cy="400" r="370" fill="url(#gold)"/>
+<circle cx="400" cy="400" r="346" fill="url(#bg)" stroke="#f6cf68" stroke-width="5"/>
+<g clip-path="url(#disc)" opacity=".55">
+ <rect x="0" y="560" width="800" height="240" fill="#0d4829"/>
+ <path d="M70 650H730M400 560V800M250 560v240M550 560v240" stroke="#fff" stroke-width="3" opacity=".35"/>
+ <ellipse cx="400" cy="720" rx="115" ry="45" fill="none" stroke="#fff" stroke-width="3" opacity=".45"/>
+</g>
+<path d="M290 205 L330 130 L400 165 L470 130 L510 205 L475 245 L325 245 Z" fill="url(#gold)" stroke="#8b5a10" stroke-width="8" filter="url(#shadow)"/>
+<circle cx="330" cy="135" r="10" fill="#ffe79a"/><circle cx="400" cy="165" r="10" fill="#ffe79a"/><circle cx="470" cy="135" r="10" fill="#ffe79a"/>
+<circle cx="400" cy="290" r="92" fill="#111b2c" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
+<path d="M400 220l23 17 28-2 9 27 24 16-15 25 7 28-28 7-18 22-25-15-25 15-18-22-28-7 7-28-15-25 24-16 9-27 28 2z" fill="url(#silver)" stroke="#252c38" stroke-width="8"/>
+<path d="M400 238v42M358 266l34 20M442 266l-34 20M375 330l25-25M425 330l-25-25" stroke="#202735" stroke-width="9" fill="none"/>
+<path d="M150 335 Q400 285 650 335 L625 500 Q400 550 175 500 Z" fill="#0b1830" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
+<text x="400" y="405" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="84" font-weight="900" fill="url(#silver)" stroke="#0a101b" stroke-width="5" paint-order="stroke">LAST MAN</text>
+<text x="400" y="478" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="72" font-weight="900" fill="url(#gold)" stroke="#3e2708" stroke-width="4" paint-order="stroke">STANDING</text>
+<path d="M260 510 Q400 535 540 510" fill="none" stroke="#f4c85b" stroke-width="6"/>
+<path d="M400 528l8 17 19 2-14 13 4 19-17-9-17 9 4-19-14-13 19-2z" fill="url(#gold)"/>
+</svg>
