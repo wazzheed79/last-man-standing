@@ -17,6 +17,11 @@ type UsedTeam = {
   name: string
 }
 
+type FormItem = {
+  result: 'W' | 'D' | 'L'
+  label: string
+}
+
 export default function LeaguePickPage() {
   const params = useParams()
   const leagueId = params.id as string
@@ -26,6 +31,7 @@ export default function LeaguePickPage() {
   const [player, setPlayer] = useState<any>(null)
   const [comp, setComp] = useState<any>(null)
   const [fixtures, setFixtures] = useState<any[]>([])
+  const [finishedFixtures, setFinishedFixtures] = useState<any[]>([])
   const [usedTeams, setUsedTeams] = useState<UsedTeam[]>([])
   const [currentPick, setCurrentPick] = useState<any>(null)
   const [deadline, setDeadline] = useState<Date | null>(null)
@@ -96,6 +102,14 @@ export default function LeaguePickPage() {
         setDeadline(null)
       }
 
+      // Finished matches for form (last 5)
+      const { data: finished } = await supabase
+        .from('fixtures_cache')
+        .select('*')
+        .in('status', ['FINISHED', 'FT', 'AWARDED'])
+        .order('utc_date', { ascending: false })
+      setFinishedFixtures(finished || [])
+
       const { data: picksData } = await supabase
         .from('picks')
         .select('*')
@@ -115,6 +129,53 @@ export default function LeaguePickPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const clean = (name: string) =>
+    (name || '')
+      .replace(' FC', '')
+      .replace(' AFC', '')
+      .replace(' and Hove Albion', '')
+      .trim()
+
+  const namesMatch = (a: string, b: string) => {
+    const x = clean(a).toLowerCase()
+    const y = clean(b).toLowerCase()
+    return x === y || x.includes(y) || y.includes(x)
+  }
+
+  const getTeamForm = (teamId: number, teamName: string): FormItem[] => {
+    const matches = finishedFixtures
+      .filter((f) => {
+        if (f.home_team_id === teamId || f.away_team_id === teamId) return true
+        if (namesMatch(f.home_team_name, teamName)) return true
+        if (namesMatch(f.away_team_name, teamName)) return true
+        return false
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.utc_date).getTime() - new Date(a.utc_date).getTime()
+      )
+      .slice(0, 5)
+      .reverse()
+
+    return matches.map((match) => {
+      const isHome =
+        match.home_team_id === teamId ||
+        namesMatch(match.home_team_name, teamName)
+      const teamScore = isHome ? match.home_score : match.away_score
+      const oppScore = isHome ? match.away_score : match.home_score
+      const opponent = isHome ? match.away_team_name : match.home_team_name
+
+      let result: 'W' | 'D' | 'L' = 'D'
+      if (teamScore > oppScore) result = 'W'
+      else if (teamScore < oppScore) result = 'L'
+
+      return {
+        result,
+        label: `${result} ${teamScore}-${oppScore} vs ${clean(opponent)}`,
+      }
+    })
   }
 
   const canChangePick = () => {
@@ -189,8 +250,8 @@ export default function LeaguePickPage() {
 
   if (player && player.status !== 'alive') {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-        <p className="text-slate-700 font-medium">You are eliminated</p>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center">
+        <p className="text-slate-700 dark:text-slate-200 font-medium">You are eliminated</p>
         <p className="text-sm text-slate-500 mt-1">
           {player.eliminated_gameweek
             ? `You went out in Gameweek ${player.eliminated_gameweek}.`
@@ -202,8 +263,8 @@ export default function LeaguePickPage() {
 
   if (comp && ['finished', 'archived'].includes(comp.status)) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6 text-center">
-        <p className="text-slate-700 font-medium">This league is finished</p>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center">
+        <p className="text-slate-700 dark:text-slate-200 font-medium">This league is finished</p>
         <p className="text-sm text-slate-500 mt-1">Picking is closed.</p>
       </div>
     )
@@ -222,7 +283,6 @@ export default function LeaguePickPage() {
 
   return (
     <div className="space-y-4 pb-28">
-      {/* Refresh strip */}
       <div className="flex justify-between items-center px-1">
         <p className="text-xs text-slate-500">
           {lastUpdated
@@ -238,10 +298,9 @@ export default function LeaguePickPage() {
         </button>
       </div>
 
-      {/* Deadline + current pick card */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
         <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
-          <div className="flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+          <div className="flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 dark:bg-amber-900/40 dark:text-amber-200 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-700">
             {deadline ? <Countdown deadline={deadline} /> : <span>No deadline yet</span>}
           </div>
           {deadlineLabel && (
@@ -252,25 +311,21 @@ export default function LeaguePickPage() {
         <div className="flex items-center justify-between gap-3 pt-0.5">
           <div className="min-w-0">
             <p className="text-xs text-slate-500">Current pick</p>
-            <p className="text-sm font-bold text-slate-800 truncate">
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
               {currentPick
                 ? shortTeamName(currentPick.team_name)
                 : 'None yet'}
               {currentPick && !locked && (
-                <span className="ml-1.5 text-emerald-600 font-semibold text-xs">
-                  saved
-                </span>
+                <span className="ml-1.5 text-emerald-600 font-semibold text-xs">saved</span>
               )}
               {currentPick && locked && (
-                <span className="ml-1.5 text-slate-400 font-semibold text-xs">
-                  locked
-                </span>
+                <span className="ml-1.5 text-slate-400 font-semibold text-xs">locked</span>
               )}
             </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-xs text-slate-500">Rule</p>
-            <p className="text-xs font-semibold text-slate-700">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
               {comp?.allow_pick_changes === false
                 ? '1 pick - locked after'
                 : '1 pick - no reuse'}
@@ -282,17 +337,16 @@ export default function LeaguePickPage() {
         {message && <p className="text-emerald-600 text-sm">{message}</p>}
       </div>
 
-      {/* Burned / unavailable teams */}
       {usedTeams.length > 0 && (
-        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs">
-          <p className="font-semibold text-slate-600 mb-2">
+        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-xs">
+          <p className="font-semibold text-slate-600 dark:text-slate-300 mb-2">
             Unavailable (already used)
           </p>
           <div className="flex flex-wrap gap-1.5">
             {usedTeams.map((t) => (
               <span
                 key={t.id}
-                className="bg-white border border-slate-300 text-slate-400 line-through px-2 py-0.5 rounded-md text-[11px] font-medium"
+                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-400 line-through px-2 py-0.5 rounded-md text-[11px] font-medium"
               >
                 {shortTeamName(t.name)}
               </span>
@@ -301,15 +355,14 @@ export default function LeaguePickPage() {
         </div>
       )}
 
-      {/* Fixtures */}
       <section className="space-y-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
           Gameweek {comp?.current_gameweek} - tap a team
         </h2>
 
         {fixtures.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">
-            No fixtures for this gameweek.
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-500">
+            No fixtures for this gameweek yet. Try Refresh, or run fetch-fixtures.
           </div>
         ) : (
           fixtures.map((f) => {
@@ -321,6 +374,8 @@ export default function LeaguePickPage() {
             const awayIsCurrent = currentPick?.team_id === f.away_team_id
             const live = isLive(f.status)
             const finished = isFinished(f.status)
+            const homeForm = getTeamForm(f.home_team_id, f.home_team_name)
+            const awayForm = getTeamForm(f.away_team_id, f.away_team_name)
 
             const kickoffLabel = f.utc_date
               ? new Date(f.utc_date).toLocaleString(undefined, {
@@ -332,6 +387,28 @@ export default function LeaguePickPage() {
                 })
               : ''
 
+            const formRow = (form: FormItem[]) =>
+              form.length > 0 ? (
+                <div className="flex flex-nowrap gap-0.5 mt-1.5 justify-center">
+                  {form.map((item, i) => (
+                    <span
+                      key={i}
+                      title={item.label}
+                      className={
+                        'w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white flex items-center justify-center shrink-0 ' +
+                        (item.result === 'W'
+                          ? 'bg-emerald-500'
+                          : item.result === 'D'
+                          ? 'bg-slate-400'
+                          : 'bg-red-500')
+                      }
+                    >
+                      {item.result}
+                    </span>
+                  ))}
+                </div>
+              ) : null
+
             const teamButton = (
               side: 'home' | 'away',
               teamId: number,
@@ -339,7 +416,8 @@ export default function LeaguePickPage() {
               crest: string | null,
               used: boolean,
               selected: boolean,
-              isCurrent: boolean
+              isCurrent: boolean,
+              form: FormItem[]
             ) => (
               <button
                 type="button"
@@ -351,14 +429,14 @@ export default function LeaguePickPage() {
                     crest,
                   })
                 }
-                className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all touch-manipulation active:scale-[0.98] min-h-[96px] ${
+                className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all touch-manipulation active:scale-[0.98] min-h-[108px] ${
                   used
-                    ? 'opacity-40 bg-slate-50 border-dashed border-slate-200 cursor-not-allowed'
+                    ? 'opacity-40 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-200 cursor-not-allowed'
                     : selected
-                    ? 'bg-emerald-50 border-emerald-500 shadow-sm'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 shadow-sm'
                     : isCurrent
-                    ? 'bg-blue-50 border-blue-300'
-                    : 'bg-white border-slate-100 hover:border-slate-200'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300'
+                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-600 hover:border-slate-200'
                 }`}
               >
                 {selected && (
@@ -375,11 +453,11 @@ export default function LeaguePickPage() {
                   <img
                     src={crest}
                     alt=""
-                    className="w-9 h-9 object-contain mb-1.5"
+                    className="w-9 h-9 object-contain mb-1"
                   />
                 )}
                 <span
-                  className="text-xs font-bold text-slate-800 leading-tight"
+                  className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight"
                   title={teamName}
                 >
                   {shortTeamName(teamName)}
@@ -387,15 +465,16 @@ export default function LeaguePickPage() {
                 <span className="text-[10px] text-slate-400 font-medium mt-0.5">
                   {side === 'home' ? 'Home' : 'Away'}
                 </span>
+                {formRow(form)}
               </button>
             )
 
             return (
               <div
                 key={f.match_id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
               >
-                <div className="bg-slate-50 border-b border-slate-100 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                   <span>
                     {kickoffLabel}
                     {live ? ' - LIVE' : finished ? ' - FT' : ''}
@@ -405,7 +484,7 @@ export default function LeaguePickPage() {
                       live
                         ? 'text-red-600'
                         : finished
-                        ? 'text-slate-800'
+                        ? 'text-slate-800 dark:text-slate-100'
                         : 'text-slate-400'
                     }`}
                   >
@@ -424,7 +503,8 @@ export default function LeaguePickPage() {
                     f.home_team_crest,
                     homeUsed,
                     homeSelected,
-                    homeIsCurrent
+                    homeIsCurrent,
+                    homeForm
                   )}
                   {teamButton(
                     'away',
@@ -433,7 +513,8 @@ export default function LeaguePickPage() {
                     f.away_team_crest,
                     awayUsed,
                     awaySelected,
-                    awayIsCurrent
+                    awayIsCurrent,
+                    awayForm
                   )}
                 </div>
               </div>
@@ -442,14 +523,13 @@ export default function LeaguePickPage() {
         )}
       </section>
 
-      {/* Sticky confirm bar */}
-      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md p-4 shadow-lg">
+      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-lg">
         <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
           <div className="min-w-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
               {hasUnsavedChanges ? 'Selected pick' : currentPick ? 'Locked in' : 'Select a team'}
             </span>
-            <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
               {selectedTeam
                 ? shortTeamName(selectedTeam.name)
                 : currentPick
@@ -465,7 +545,7 @@ export default function LeaguePickPage() {
             className={`shrink-0 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-sm ${
               hasUnsavedChanges && !submitting
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
             }`}
           >
             {submitting
