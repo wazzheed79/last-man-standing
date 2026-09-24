@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import ThemeToggle from '@/components/ThemeToggle'
+import ThemeToggle from '@/components/ThemeToggle'\nimport ThreeDBadge from '@/components/ThreeDBadge'
 
 export default function HomePage() {
   const [user, setUser] = useState<any>(null)
@@ -81,6 +81,10 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8">
+        <div className="mb-6">
+          <ThreeDBadge size="md" />
+        </div>
+
         <div className="mb-8">
           <p className="text-sm text-slate-500 dark:text-slate-400">Signed in as</p>
           <p className="font-medium text-slate-800 dark:text-slate-100 truncate">
