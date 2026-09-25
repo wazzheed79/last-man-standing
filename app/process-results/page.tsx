@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
@@ -32,6 +30,36 @@ export default function LeagueOverviewPage() {
   useEffect(() => {
     load()
   }, [leagueId])
+
+  const checkReminderWindow = () => {
+    if (!('Notification' in window)) return
+    if (Notification.permission !== 'granted') return
+    if (localStorage.getItem(`lms-remind-${leagueId}`) !== '1') return
+    if (!comp || !me || me.status !== 'alive') return
+    if (myPick) return
+    if (!deadline) return
+
+    const now = Date.now()
+    const diff = deadline.getTime() - now
+    const in24h = diff <= 24 * 60 * 60 * 1000 && diff > 0
+    const in2h = diff <= 2 * 60 * 60 * 1000 && diff > 0
+
+    if (!in24h && !in2h) return
+
+    const reminderKey = `lms-reminder-sent-${leagueId}-${comp.current_gameweek}`
+    if (localStorage.getItem(reminderKey) === '1') return
+
+    new Notification('Last Man Standing', {
+      body: `Your pick deadline is approaching for GW${comp.current_gameweek}.`,
+      icon: '/icon.svg',
+    })
+
+    localStorage.setItem(reminderKey, '1')
+  }
+
+  useEffect(() => {
+    checkReminderWindow()
+  }, [comp, me, myPick, deadline, leagueId])
 
   const load = async () => {
     try {
@@ -220,19 +248,7 @@ export default function LeagueOverviewPage() {
     setNotifMsg('Reminders enabled on this device')
     setTimeout(() => setNotifMsg(''), 2500)
 
-    if (deadline && deadline.getTime() > Date.now() && !myPick && me?.status === 'alive') {
-      const ms = deadline.getTime() - Date.now() - 2 * 60 * 60 * 1000
-      if (ms > 0 && ms < 7 * 24 * 60 * 60 * 1000) {
-        setTimeout(() => {
-          if (localStorage.getItem(`lms-remind-${leagueId}`) === '1') {
-            new Notification('Last Man Standing', {
-              body: `Pick deadline soon for ${comp?.name || 'your league'} (GW${comp?.current_gameweek})`,
-              icon: '/icon.svg',
-            })
-          }
-        }, ms)
-      }
-    }
+    checkReminderWindow()
   }
 
   if (loading) {
@@ -556,19 +572,3 @@ export default function LeagueOverviewPage() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
