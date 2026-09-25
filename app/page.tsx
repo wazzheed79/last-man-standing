@@ -83,11 +83,13 @@ export default function HomePage() {
 
       <main className="max-w-lg mx-auto px-4 py-8">
         <div className="mb-6 flex justify-center">
-          <img
-            src="/last-man-standing-badge.svg"
-            alt="Last Man Standing"
-            className="h-64 w-64 max-w-full object-contain"
-          />
+          <div className="badge-3d-container">
+            <img
+              src="/last-man-standing-badge.svg"
+              alt="Last Man Standing"
+              className="badge-3d"
+            />
+          </div>
         </div>
 
         <div className="mb-8">

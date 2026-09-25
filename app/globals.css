@@ -39,3 +39,55 @@ html.dark .border-slate-100,
 html.dark .border-gray-200,
 html.dark .border-gray-300 { border-color: #334155; }
 html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+
+/* ===== 3D Badge Animation ===== */
+.badge-3d-container {
+  perspective: 1000px;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-3d {
+  width: 100%;
+  height: auto;
+  max-width: 280px;
+  transform-style: preserve-3d;
+  animation: badge-spin 10s linear infinite;
+  transform: rotateX(6deg) rotateY(0deg);
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.35));
+  transition: transform 0.35s ease, filter 0.35s ease;
+  will-change: transform;
+}
+
+@keyframes badge-spin {
+  from {
+    transform: rotateX(6deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(6deg) rotateY(360deg);
+  }
+}
+
+/* Pause + gentle tilt on hover / focus */
+.badge-3d-container:hover .badge-3d,
+.badge-3d-container:focus-within .badge-3d {
+  animation-play-state: paused;
+  transform: rotateX(0deg) rotateY(18deg) scale(1.06);
+  filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.45));
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .badge-3d {
+    animation: none;
+    transform: none;
+  }
+  .badge-3d-container:hover .badge-3d,
+  .badge-3d-container:focus-within .badge-3d {
+    transform: scale(1.03);
+  }
+}
