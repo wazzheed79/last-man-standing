@@ -40,15 +40,18 @@ html.dark .border-gray-200,
 html.dark .border-gray-300 { border-color: #334155; }
 html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
 
-/* ===== 3D Badge Animation ===== */
+/* ===== Enhanced 3D Badge ===== */
 .badge-3d-container {
-  perspective: 1000px;
-  width: 280px;
-  height: 280px;
+  perspective: 700px;
+  perspective-origin: 50% 40%;
+  width: 300px;
+  height: 300px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Extra room for the pop-out shadow */
+  padding-bottom: 24px;
 }
 
 .badge-3d {
@@ -56,38 +59,55 @@ html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #3
   height: auto;
   max-width: 280px;
   transform-style: preserve-3d;
-  animation: badge-spin 10s linear infinite;
-  transform: rotateX(6deg) rotateY(0deg);
-  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.35));
-  transition: transform 0.35s ease, filter 0.35s ease;
+  animation: badge-spin-float 9s linear infinite;
+  /* Base 3D pose: slight tilt + pushed toward viewer */
+  transform: rotateX(12deg) rotateY(0deg) translateZ(40px) scale(1.05);
+  filter:
+    drop-shadow(0 8px 6px rgba(0, 0, 0, 0.15))
+    drop-shadow(0 28px 40px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 20px rgba(212, 160, 40, 0.18));
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), filter 0.4s ease;
   will-change: transform;
 }
 
-@keyframes badge-spin {
-  from {
-    transform: rotateX(6deg) rotateY(0deg);
+/* Combined spin + gentle float */
+@keyframes badge-spin-float {
+  0% {
+    transform: rotateX(12deg) rotateY(0deg) translateZ(40px) translateY(0px) scale(1.05);
   }
-  to {
-    transform: rotateX(6deg) rotateY(360deg);
+  25% {
+    transform: rotateX(12deg) rotateY(90deg) translateZ(40px) translateY(-10px) scale(1.05);
+  }
+  50% {
+    transform: rotateX(12deg) rotateY(180deg) translateZ(40px) translateY(0px) scale(1.05);
+  }
+  75% {
+    transform: rotateX(12deg) rotateY(270deg) translateZ(40px) translateY(-10px) scale(1.05);
+  }
+  100% {
+    transform: rotateX(12deg) rotateY(360deg) translateZ(40px) translateY(0px) scale(1.05);
   }
 }
 
-/* Pause + gentle tilt on hover / focus */
+/* Strong pop-out on hover / focus */
 .badge-3d-container:hover .badge-3d,
 .badge-3d-container:focus-within .badge-3d {
   animation-play-state: paused;
-  transform: rotateX(0deg) rotateY(18deg) scale(1.06);
-  filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.45));
+  transform: rotateX(4deg) rotateY(22deg) translateZ(80px) scale(1.18);
+  filter:
+    drop-shadow(0 12px 10px rgba(0, 0, 0, 0.2))
+    drop-shadow(0 40px 60px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 0 32px rgba(212, 160, 40, 0.35));
 }
 
 /* Respect reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
   .badge-3d {
     animation: none;
-    transform: none;
+    transform: rotateX(8deg) translateZ(30px) scale(1.05);
   }
   .badge-3d-container:hover .badge-3d,
   .badge-3d-container:focus-within .badge-3d {
-    transform: scale(1.03);
+    transform: rotateX(4deg) translateZ(50px) scale(1.12);
   }
 }
