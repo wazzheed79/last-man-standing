@@ -40,74 +40,127 @@ html.dark .border-gray-200,
 html.dark .border-gray-300 { border-color: #334155; }
 html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
 
-/* ===== Enhanced 3D Badge ===== */
+/* ===== Extreme 3D Badge + Metallic Shine ===== */
 .badge-3d-container {
-  perspective: 700px;
-  perspective-origin: 50% 40%;
-  width: 300px;
-  height: 300px;
+  perspective: 600px;
+  perspective-origin: 50% 35%;
+  width: 320px;
+  height: 320px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Extra room for the pop-out shadow */
-  padding-bottom: 24px;
+  padding-bottom: 32px;
 }
 
-.badge-3d {
-  width: 100%;
-  height: auto;
-  max-width: 280px;
+.badge-3d-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
   transform-style: preserve-3d;
-  animation: badge-spin-float 9s linear infinite;
-  /* Base 3D pose: slight tilt + pushed toward viewer */
-  transform: rotateX(12deg) rotateY(0deg) translateZ(40px) scale(1.05);
-  filter:
-    drop-shadow(0 8px 6px rgba(0, 0, 0, 0.15))
-    drop-shadow(0 28px 40px rgba(0, 0, 0, 0.35))
-    drop-shadow(0 0 20px rgba(212, 160, 40, 0.18));
-  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), filter 0.4s ease;
+  animation: badge-spin-float 12s linear infinite;
+  transform: rotateX(14deg) rotateY(0deg) translateZ(55px) scale(1.08);
   will-change: transform;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.4s ease;
+  filter:
+    drop-shadow(0 6px 4px rgba(0, 0, 0, 0.12))
+    drop-shadow(0 22px 28px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 40px 55px rgba(0, 0, 0, 0.22))
+    drop-shadow(0 0 28px rgba(212, 160, 40, 0.22));
 }
 
-/* Combined spin + gentle float */
+.badge-3d-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 50%;
+}
+
+/* Metallic shine sweep */
+.badge-3d-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(255, 250, 220, 0.55) 48%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 250, 220, 0.45) 52%,
+    rgba(255, 255, 255, 0.08) 58%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: shine-sweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
 @keyframes badge-spin-float {
   0% {
-    transform: rotateX(12deg) rotateY(0deg) translateZ(40px) translateY(0px) scale(1.05);
+    transform: rotateX(14deg) rotateY(0deg) translateZ(55px) translateY(0) scale(1.08);
   }
   25% {
-    transform: rotateX(12deg) rotateY(90deg) translateZ(40px) translateY(-10px) scale(1.05);
+    transform: rotateX(14deg) rotateY(90deg) translateZ(55px) translateY(-14px) scale(1.08);
   }
   50% {
-    transform: rotateX(12deg) rotateY(180deg) translateZ(40px) translateY(0px) scale(1.05);
+    transform: rotateX(14deg) rotateY(180deg) translateZ(55px) translateY(0) scale(1.08);
   }
   75% {
-    transform: rotateX(12deg) rotateY(270deg) translateZ(40px) translateY(-10px) scale(1.05);
+    transform: rotateX(14deg) rotateY(270deg) translateZ(55px) translateY(-14px) scale(1.08);
   }
   100% {
-    transform: rotateX(12deg) rotateY(360deg) translateZ(40px) translateY(0px) scale(1.05);
+    transform: rotateX(14deg) rotateY(360deg) translateZ(55px) translateY(0) scale(1.08);
+  }
+}
+
+@keyframes shine-sweep {
+  0% {
+    background-position: 160% 0;
+  }
+  40%,
+  100% {
+    background-position: -60% 0;
   }
 }
 
 /* Strong pop-out on hover / focus */
-.badge-3d-container:hover .badge-3d,
-.badge-3d-container:focus-within .badge-3d {
+.badge-3d-container:hover .badge-3d-wrapper,
+.badge-3d-container:focus-within .badge-3d-wrapper {
   animation-play-state: paused;
-  transform: rotateX(4deg) rotateY(22deg) translateZ(80px) scale(1.18);
+  transform: rotateX(5deg) rotateY(26deg) translateZ(110px) scale(1.22);
   filter:
-    drop-shadow(0 12px 10px rgba(0, 0, 0, 0.2))
-    drop-shadow(0 40px 60px rgba(0, 0, 0, 0.45))
-    drop-shadow(0 0 32px rgba(212, 160, 40, 0.35));
+    drop-shadow(0 10px 8px rgba(0, 0, 0, 0.18))
+    drop-shadow(0 35px 50px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 55px 80px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 45px rgba(212, 160, 40, 0.45));
+}
+
+.badge-3d-container:hover .badge-3d-wrapper::after,
+.badge-3d-container:focus-within .badge-3d-wrapper::after {
+  animation-duration: 2.2s;
+  opacity: 1;
 }
 
 /* Respect reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .badge-3d {
+  .badge-3d-wrapper {
     animation: none;
-    transform: rotateX(8deg) translateZ(30px) scale(1.05);
+    transform: rotateX(10deg) translateZ(40px) scale(1.06);
   }
-  .badge-3d-container:hover .badge-3d,
-  .badge-3d-container:focus-within .badge-3d {
-    transform: rotateX(4deg) translateZ(50px) scale(1.12);
+  .badge-3d-wrapper::after {
+    animation: none;
+    opacity: 0.4;
+    background-position: 40% 0;
+  }
+  .badge-3d-container:hover .badge-3d-wrapper,
+  .badge-3d-container:focus-within .badge-3d-wrapper {
+    transform: rotateX(4deg) translateZ(70px) scale(1.14);
   }
 }
