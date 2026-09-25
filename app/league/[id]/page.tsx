@@ -3,55 +3,38 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
-import Countdown from '@/components/Countdown'
-import { shortTeamName } from '@/lib/teamNames'
+import Link from 'next/link'
 
-type SelectedTeam = {
-  id: number
-  name: string
-  crest?: string | null
-}
-
-type UsedTeam = {
-  id: number
-  name: string
-}
-
-type FormItem = {
-  result: 'W' | 'D' | 'L'
-  label: string
-}
-
-export default function LeaguePickPage() {
+export default function LeagueOverviewPage() {
   const params = useParams()
   const leagueId = params.id as string
   const router = useRouter()
   const supabase = createClient()
 
-  const [player, setPlayer] = useState<any>(null)
-  const [comp, setComp] = useState<any>(null)
-  const [fixtures, setFixtures] = useState<any[]>([])
-  const [finishedFixtures, setFinishedFixtures] = useState<any[]>([])
-  const [usedTeams, setUsedTeams] = useState<UsedTeam[]>([])
-  const [currentPick, setCurrentPick] = useState<any>(null)
-  const [deadline, setDeadline] = useState<Date | null>(null)
-  const [selectedTeam, setSelectedTeam] = useState<SelectedTeam | null>(null)
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [comp, setComp] = useState<any>(null)
+  const [me, setMe] = useState<any>(null)
+  const [players, setPlayers] = useState<any[]>([])
+  const [aliveCount, setAliveCount] = useState(0)
+  const [totalPlayers, setTotalPlayers] = useState(0)
+  const [myPick, setMyPick] = useState<any>(null)
+  const [winner, setWinner] = useState<any>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [joinUrl, setJoinUrl] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [pickedIds, setPickedIds] = useState<Set<string>>(new Set())
+  const [allPicks, setAllPicks] = useState<any[]>([])
+  const [deadline, setDeadline] = useState<Date | null>(null)
+  const [notifMsg, setNotifMsg] = useState('')
 
   useEffect(() => {
-    load(true)
-    const interval = setInterval(() => load(false), 30000)
-    return () => clearInterval(interval)
+    load()
   }, [leagueId])
 
-  const load = async (showLoading = false) => {
+  const load = async () => {
     try {
-      if (showLoading) setLoading(true)
-
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -59,6 +42,7 @@ export default function LeaguePickPage() {
         router.push('/login')
         return
       }
+      setUserId(user.id)
 
       const { data: competition, error: cErr } = await supabase
         .from('competitions')
@@ -68,65 +52,64 @@ export default function LeaguePickPage() {
       if (cErr) throw cErr
       setComp(competition)
 
-      const { data: me, error: meErr } = await supabase
+      if (typeof window !== 'undefined' && competition?.join_code) {
+        setJoinUrl(
+          `${window.location.origin}/join?code=${encodeURIComponent(competition.join_code)}`
+        )
+      }
+
+      const { data: playersData } = await supabase
         .from('competition_players')
         .select('*')
         .eq('competition_id', leagueId)
-        .eq('user_id', user.id)
-        .single()
-      if (meErr) throw meErr
-      setPlayer(me)
+        .order('joined_at', { ascending: true })
 
-      if (me.status !== 'alive') {
-        setLoading(false)
-        return
+      const list = playersData || []
+      setPlayers(list)
+      setTotalPlayers(list.length)
+      setAliveCount(list.filter((p) => p.status === 'alive').length)
+
+      const mine = list.find((p) => p.user_id === user.id)
+      setMe(mine)
+
+      if (competition.winner_player_id) {
+        setWinner(list.find((p) => p.id === competition.winner_player_id) || null)
       }
 
       const gw = competition.current_gameweek
       const cycleNumber = Number(competition.cycle_number ?? 1)
 
-      const { data: fixturesData } = await supabase
+      const { data: gwFixtures } = await supabase
         .from('fixtures_cache')
-        .select('*')
+        .select('utc_date')
         .eq('matchday', gw)
         .order('utc_date')
-      setFixtures(fixturesData || [])
-      setLastUpdated(new Date())
-
-      if (fixturesData && fixturesData.length > 0) {
-        const firstKick = fixturesData.reduce(
-          (min: string, f: any) => (f.utc_date < min ? f.utc_date : min),
-          fixturesData[0].utc_date
-        )
-        setDeadline(new Date(firstKick))
-      } else {
-        setDeadline(null)
+      if (gwFixtures && gwFixtures.length > 0) {
+        setDeadline(new Date(gwFixtures[0].utc_date))
       }
-
-      const { data: finished } = await supabase
-        .from('fixtures_cache')
-        .select('*')
-        .in('status', ['FINISHED', 'FT', 'AWARDED'])
-        .order('utc_date', { ascending: false })
-      setFinishedFixtures(finished || [])
 
       const { data: picksData } = await supabase
         .from('picks')
         .select('*')
-        .eq('player_id', me.id)
-
-      const allPicks = picksData || []
-      const cyclePicks = allPicks.filter(
+        .eq('competition_id', leagueId)
+      const allPicksInCycle = (picksData || []).filter(
         (p: any) => Number(p.cycle_number ?? 1) === cycleNumber
       )
-      const thisWeek = cyclePicks.find((p: any) => p.gameweek === gw) || null
-      setCurrentPick(thisWeek)
+      setAllPicks(allPicksInCycle)
 
-      setUsedTeams(
-        cyclePicks
-          .filter((p: any) => p.gameweek !== gw)
-          .map((p: any) => ({ id: p.team_id as number, name: p.team_name as string }))
+      const thisGwPicked = new Set(
+        allPicksInCycle
+          .filter((p: any) => p.gameweek === gw)
+          .map((p: any) => p.player_id as string)
       )
+      setPickedIds(thisGwPicked)
+
+      if (mine) {
+        const pick = allPicksInCycle.find(
+          (p: any) => p.player_id === mine.id && p.gameweek === gw
+        )
+        setMyPick(pick || null)
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -134,451 +117,442 @@ export default function LeaguePickPage() {
     }
   }
 
-  const clean = (name: string) =>
-    (name || '')
-      .replace(' FC', '')
-      .replace(' AFC', '')
-      .replace(' and Hove Albion', '')
-      .trim()
-
-  const namesMatch = (a: string, b: string) => {
-    const x = clean(a).toLowerCase()
-    const y = clean(b).toLowerCase()
-    return x === y || x.includes(y) || y.includes(x)
-  }
-
-  const getTeamForm = (teamId: number, teamName: string): FormItem[] => {
-    const matches = finishedFixtures
-      .filter((f) => {
-        if (f.home_team_id === teamId || f.away_team_id === teamId) return true
-        if (namesMatch(f.home_team_name, teamName)) return true
-        if (namesMatch(f.away_team_name, teamName)) return true
-        return false
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.utc_date).getTime() - new Date(a.utc_date).getTime()
-      )
-      .slice(0, 5)
-      .reverse()
-
-    return matches.map((match) => {
-      const isHome =
-        match.home_team_id === teamId ||
-        namesMatch(match.home_team_name, teamName)
-      const teamScore = isHome ? match.home_score : match.away_score
-      const oppScore = isHome ? match.away_score : match.home_score
-      const opponent = isHome ? match.away_team_name : match.home_team_name
-
-      let result: 'W' | 'D' | 'L' = 'D'
-      if (teamScore > oppScore) result = 'W'
-      else if (teamScore < oppScore) result = 'L'
-
-      return {
-        result,
-        label: `${result} ${teamScore}-${oppScore} vs ${clean(opponent)}`,
-      }
-    })
-  }
-
-  const canChangePick = () => {
-    if (currentPick?.status === 'postponed') return true
-    if (comp?.allow_pick_changes === false && currentPick) return false
-    if (!deadline) return true
-    return new Date() < deadline
-  }
-
-  const usedTeamIds = usedTeams.map((t) => t.id)
-  const isBurned = (teamId: number) => usedTeamIds.includes(teamId)
-
-  const hasUnsavedChanges =
-    !!selectedTeam &&
-    selectedTeam.id !== currentPick?.team_id &&
-    canChangePick()
-
-  const handleSelectTeam = (team: SelectedTeam) => {
-    if (isBurned(team.id)) return
-    if (!canChangePick() && currentPick) return
-    setSelectedTeam(team)
-    setMessage('')
-    setError('')
-  }
-
-  const handlePick = async () => {
-    if (!selectedTeam || !player || !comp) return
-    if (!hasUnsavedChanges) return
-
-    setSubmitting(true)
-    setError('')
-    setMessage('')
-
+  const copyJoin = async () => {
+    const text = joinUrl || comp?.join_code || ''
     try {
-      const { error } = await supabase.rpc('make_pick', {
-        p_competition_id: leagueId,
-        p_team_id: selectedTeam.id,
-        p_team_name: selectedTeam.name,
-      })
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setError('Could not copy - select the code manually')
+    }
+  }
 
+  const handleLeave = async () => {
+    if (!me) return
+    const confirmed = window.confirm(
+      `Leave "${comp?.name}"?\n\nThis removes you and your pick history from this league.`
+    )
+    if (!confirmed) return
+
+    setLeaving(true)
+    setError('')
+    try {
+      const { error } = await supabase
+        .from('competition_players')
+        .delete()
+        .eq('id', me.id)
       if (error) throw error
-
-      const action = currentPick ? 'Changed' : 'Picked'
-      setMessage(`${action} ${selectedTeam.name} for GW${comp.current_gameweek}`)
-      setSelectedTeam(null)
-      await load(false)
+      router.push('/competitions')
     } catch (err: any) {
-      setError(err.message || 'Unable to save pick.')
-    } finally {
-      setSubmitting(false)
+      setError(err.message)
+      setLeaving(false)
     }
   }
 
-  const isLive = (status: string) => {
-    const s = (status || '').toUpperCase()
-    return ['IN_PLAY', 'LIVE', 'PAUSED', 'HALFTIME', 'HT'].includes(s)
+  const exportCsv = () => {
+    const byPlayer = new Map<string, any[]>()
+    allPicks.forEach((p) => {
+      const list = byPlayer.get(p.player_id) || []
+      list.push(p)
+      byPlayer.set(p.player_id, list)
+    })
+    const maxGw = Math.max(
+      0,
+      ...allPicks.map((p) => p.gameweek || 0),
+      comp?.current_gameweek || 0
+    )
+    const headers = ['Player', 'Status', 'Eliminated GW']
+    for (let g = 1; g <= maxGw; g++) headers.push(`GW${g}`)
+    const rows = [headers.join(',')]
+    players.forEach((pl) => {
+      const picks = (byPlayer.get(pl.id) || []).sort(
+        (a, b) => a.gameweek - b.gameweek
+      )
+      const byGw = new Map(picks.map((p) => [p.gameweek, p.team_name]))
+      const cols = [
+        `"${(pl.display_name || '').replace(/"/g, '""')}"`,
+        pl.status,
+        pl.eliminated_gameweek ?? '',
+      ]
+      for (let g = 1; g <= maxGw; g++) {
+        cols.push(`"${(byGw.get(g) || '').replace(/"/g, '""')}"`)
+      }
+      rows.push(cols.join(','))
+    })
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${(comp?.name || 'league').replace(/\s+/g, '-')}-picks.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
-  const isFinished = (status: string) => {
-    const s = (status || '').toUpperCase()
-    return ['FINISHED', 'FT', 'AWARDED'].includes(s)
-  }
-
-  const scoreLabel = (f: any) => {
-    if (isLive(f.status) || isFinished(f.status) || f.home_score != null) {
-      return `${f.home_score ?? 0}-${f.away_score ?? 0}`
+  const shareAlive = async () => {
+    const text = me?.status === 'alive'
+      ? `Still alive in ${comp?.name} — Last Man Standing GW${comp?.current_gameweek}!`
+      : `I went out in GW${me?.eliminated_gameweek || '?'} in ${comp?.name}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Last Man Standing', text, url: joinUrl || window.location.href })
+      } else {
+        await navigator.clipboard.writeText(text)
+        setNotifMsg('Status copied to clipboard')
+        setTimeout(() => setNotifMsg(''), 2000)
+      }
+    } catch {
+      /* user cancelled */
     }
-    return 'vs'
   }
 
-  if (loading) return <p className="text-slate-500 text-center py-8">Loading...</p>
+  const enableReminders = async () => {
+    if (!('Notification' in window)) {
+      setNotifMsg('Notifications not supported on this browser')
+      return
+    }
+    const perm = await Notification.requestPermission()
+    if (perm !== 'granted') {
+      setNotifMsg('Notification permission denied')
+      return
+    }
+    localStorage.setItem(`lms-remind-${leagueId}`, '1')
+    setNotifMsg('Reminders enabled on this device')
+    setTimeout(() => setNotifMsg(''), 2500)
 
-  if (player && player.status !== 'alive') {
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center">
-        <p className="text-slate-700 dark:text-slate-200 font-medium">You are eliminated</p>
-        <p className="text-sm text-slate-500 mt-1">
-          {player.eliminated_gameweek
-            ? `You went out in Gameweek ${player.eliminated_gameweek}.`
-            : 'You can still view players and results.'}
-        </p>
-      </div>
-    )
+    if (deadline && deadline.getTime() > Date.now() && !myPick && me?.status === 'alive') {
+      const ms = deadline.getTime() - Date.now() - 2 * 60 * 60 * 1000
+      if (ms > 0 && ms < 7 * 24 * 60 * 60 * 1000) {
+        setTimeout(() => {
+          if (localStorage.getItem(`lms-remind-${leagueId}`) === '1') {
+            new Notification('Last Man Standing', {
+              body: `Pick deadline soon for ${comp?.name || 'your league'} (GW${comp?.current_gameweek})`,
+              icon: '/icon.svg',
+            })
+          }
+        }, ms)
+      }
+    }
   }
 
-  if (comp && ['finished', 'archived'].includes(comp.status)) {
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center">
-        <p className="text-slate-700 dark:text-slate-200 font-medium">This league is finished</p>
-        <p className="text-sm text-slate-500 mt-1">Picking is closed.</p>
-      </div>
-    )
+  if (loading) {
+    return <p className="text-slate-500 text-center">Loading overview...</p>
   }
 
-  const locked = !canChangePick()
-  const deadlineLabel = deadline
-    ? deadline.toLocaleString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null
+  if (error && !comp) {
+    return <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+  }
+
+  const statusColour =
+    comp?.status === 'active' || comp?.status === 'open'
+      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+      : comp?.status === 'finished'
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+      : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+
+  const alive = players.filter((p) => p.status === 'alive')
+  const out = players
+    .filter((p) => p.status === 'eliminated')
+    .sort((a, b) => (a.eliminated_gameweek || 99) - (b.eliminated_gameweek || 99))
+
+  const isCreator = comp?.created_by === userId
+  const needsPick =
+    me?.status === 'alive' &&
+    !myPick &&
+    ['open', 'active'].includes(comp?.status) &&
+    (!deadline || deadline.getTime() > Date.now())
+
+  const notPickedAlive = alive.filter((p) => !pickedIds.has(p.id))
+  const pickedAlive = alive.filter((p) => pickedIds.has(p.id))
+
+  const qrSrc = joinUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(joinUrl)}`
+    : ''
 
   return (
-    <div className="space-y-4 pb-28">
-      <div className="flex justify-between items-center px-1">
-        <p className="text-xs text-slate-500">
-          {lastUpdated
-            ? `Scores refresh every 30s - Updated ${lastUpdated.toLocaleTimeString()}`
-            : 'Loading scores...'}
-        </p>
-        <button
-          type="button"
-          onClick={() => load(false)}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-        >
-          Refresh now
-        </button>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
-        <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
-          <div className="flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 dark:bg-amber-900/40 dark:text-amber-200 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-700">
-            <span className="inline-block">⏰</span>
-            {deadline ? <Countdown deadline={deadline} /> : <span>No deadline yet</span>}
-          </div>
-          {deadlineLabel && (
-            <span className="text-slate-400 text-[11px]">{deadlineLabel}</span>
-          )}
+    <div className="max-w-2xl mx-auto space-y-4">
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">
+          {error}
         </div>
-
-        <div className="flex items-center justify-between gap-3 pt-0.5">
-          <div className="min-w-0">
-            <p className="text-xs text-slate-500">Current pick</p>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-              {currentPick
-                ? shortTeamName(currentPick.team_name)
-                : 'None yet'}
-              {currentPick && !locked && (
-                <span className="ml-1.5 text-emerald-600 font-semibold text-xs">saved</span>
-              )}
-              {currentPick && locked && (
-                <span className="ml-1.5 text-slate-400 font-semibold text-xs">locked</span>
-              )}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-slate-500">Rule</p>
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-              {comp?.allow_pick_changes === false
-                ? '1 pick - locked after'
-                : '1 pick - no reuse'}
-            </p>
-          </div>
-        </div>
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        {message && <p className="text-emerald-600 text-sm">{message}</p>}
-      </div>
-
-      {usedTeams.length > 0 && (
-        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-xs">
-          <p className="font-semibold text-slate-600 dark:text-slate-300 mb-2">
-            Unavailable (already used)
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {usedTeams.map((t) => (
-              <span
-                key={t.id}
-                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-400 line-through px-2 py-0.5 rounded-md text-[11px] font-medium"
-              >
-                {shortTeamName(t.name)}
-              </span>
-            ))}
-          </div>
+      )}
+      {notifMsg && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-sm">
+          {notifMsg}
         </div>
       )}
 
-      <section className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
-          Gameweek {comp?.current_gameweek} - tap a team
-        </h2>
-
-        {fixtures.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-500">
-            No fixtures for this gameweek yet. Try Refresh, or run fetch-fixtures.
-          </div>
-        ) : (
-          fixtures.map((f) => {
-            const homeUsed = isBurned(f.home_team_id)
-            const awayUsed = isBurned(f.away_team_id)
-            const homeSelected = selectedTeam?.id === f.home_team_id
-            const awaySelected = selectedTeam?.id === f.away_team_id
-            const homeIsCurrent = currentPick?.team_id === f.home_team_id
-            const awayIsCurrent = currentPick?.team_id === f.away_team_id
-            const live = isLive(f.status)
-            const finished = isFinished(f.status)
-            const homeForm = getTeamForm(f.home_team_id, f.home_team_name)
-            const awayForm = getTeamForm(f.away_team_id, f.away_team_name)
-
-            const kickoffLabel = f.utc_date
-              ? new Date(f.utc_date).toLocaleString(undefined, {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : ''
-
-            const formRow = (form: FormItem[]) =>
-              form.length > 0 ? (
-                <div className="flex flex-nowrap gap-0.5 mt-1.5 justify-center">
-                  {form.map((item, i) => (
-                    <span
-                      key={i}
-                      title={item.label}
-                      className={
-                        'w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white flex items-center justify-center shrink-0 ' +
-                        (item.result === 'W'
-                          ? 'bg-emerald-500'
-                          : item.result === 'D'
-                          ? 'bg-slate-400'
-                          : 'bg-red-500')
-                      }
-                    >
-                      {item.result}
-                    </span>
-                  ))}
-                </div>
-              ) : null
-
-            const teamButton = (
-              side: 'home' | 'away',
-              teamId: number,
-              teamName: string,
-              crest: string | null,
-              used: boolean,
-              selected: boolean,
-              isCurrent: boolean,
-              form: FormItem[]
-            ) => (
-              <button
-                type="button"
-                disabled={used || (locked && !isCurrent)}
-                onClick={() =>
-                  handleSelectTeam({
-                    id: teamId,
-                    name: teamName,
-                    crest,
-                  })
-                }
-                className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all touch-manipulation active:scale-[0.98] min-h-[108px] ${
-                  used
-                    ? 'opacity-40 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-200 cursor-not-allowed'
-                    : selected
-                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 shadow-sm'
-                    : isCurrent
-                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300'
-                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-600 hover:border-slate-200'
-                }`}
-              >
-                {selected && (
-                  <span className="absolute top-1.5 right-1.5 text-emerald-600 text-[10px] font-bold">
-                    OK
-                  </span>
-                )}
-                {used && (
-                  <span className="absolute top-1.5 right-1.5 text-slate-400 text-[10px] font-bold">
-                    Used
-                  </span>
-                )}
-                {crest && (
-                  <img
-                    src={crest}
-                    alt=""
-                    className="w-9 h-9 object-contain mb-1"
-                  />
-                )}
-                <span
-                  className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight"
-                  title={teamName}
-                >
-                  {shortTeamName(teamName)}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium mt-0.5">
-                  {side === 'home' ? 'Home' : 'Away'}
-                </span>
-                {formRow(form)}
-              </button>
-            )
-
-            return (
-              <div
-                key={f.match_id}
-                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
-              >
-                <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                  <span>{kickoffLabel}</span>
-                  <span
-                    className={`font-bold ${
-                      live
-                        ? 'text-red-600'
-                        : finished
-                        ? 'text-slate-800 dark:text-slate-100'
-                        : 'text-slate-400'
-                    }`}
-                  >
-                    {scoreLabel(f)}
-                    {live && (
-                      <span className="ml-1 animate-pulse text-[10px]">LIVE</span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 p-2">
-                  {teamButton(
-                    'home',
-                    f.home_team_id,
-                    f.home_team_name,
-                    f.home_team_crest,
-                    homeUsed,
-                    homeSelected,
-                    homeIsCurrent,
-                    homeForm
-                  )}
-                  {teamButton(
-                    'away',
-                    f.away_team_id,
-                    f.away_team_name,
-                    f.away_team_crest,
-                    awayUsed,
-                    awaySelected,
-                    awayIsCurrent,
-                    awayForm
-                  )}
-                </div>
-              </div>
-            )
-          })
-        )}
-      </section>
-
-      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-lg">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
-              {hasUnsavedChanges ? 'Selected pick' : currentPick ? 'Locked in' : 'Select a team'}
-            </span>
-            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
-              {selectedTeam
-                ? shortTeamName(selectedTeam.name)
-                : currentPick
-                ? shortTeamName(currentPick.team_name)
-                : 'None selected'}
+      {needsPick && (
+        <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
+              You haven't picked for Gameweek {comp?.current_gameweek}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-200/80 mt-0.5">
+              {deadline
+                ? `Deadline: ${deadline.toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}`
+                : 'Pick before the first kick-off'}
             </p>
           </div>
+          <Link
+            href={`/league/${leagueId}/pick`}
+            className="shrink-0 text-center bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+          >
+            Make pick
+          </Link>
+        </div>
+      )}
 
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColour}`}
+          >
+            {comp?.status}
+          </span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+            Gameweek {comp?.current_gameweek}
+          </span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300">
+            {aliveCount} / {totalPlayers} alive
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Join code</p>
+            <p className="font-mono font-bold text-xl text-slate-900 dark:text-white tracking-wider">
+              {comp?.join_code}
+            </p>
+            {joinUrl && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-all">{joinUrl}</p>
+            )}
+            <div className="flex flex-wrap gap-3 mt-2">
+              <button
+                type="button"
+                onClick={copyJoin}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                {copied ? 'Copied!' : 'Copy join link'}
+              </button>
+              <button
+                type="button"
+                onClick={shareAlive}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Share my status
+              </button>
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={enableReminders}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Enable pick reminders
+              </button>
+            </div>
+          </div>
+          {qrSrc && (
+            <div className="shrink-0 text-center">
+              <img
+                src={qrSrc}
+                alt="Join QR code"
+                className="w-28 h-28 rounded-lg border border-slate-200 dark:border-slate-600 bg-white"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Scan to join</p>
+            </div>
+          )}
+        </div>
+
+        {comp?.description && (
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-3 whitespace-pre-wrap border-t border-slate-100 dark:border-slate-700 pt-3">
+            {comp.description}
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{aliveCount}</p>
+          <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 uppercase mt-1">
+            Alive
+          </p>
+        </div>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 text-center">
+          <p className="text-3xl font-bold text-red-600 dark:text-red-300">
+            {totalPlayers - aliveCount}
+          </p>
+          <p className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase mt-1">Out</p>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+          Your status
+        </h2>
+        {me ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-slate-900 dark:text-white">{me.display_name}</span>
+              {me.status === 'alive' && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                  Alive
+                </span>
+              )}
+              {me.status === 'eliminated' && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white">
+                  Out{me.eliminated_gameweek ? ` · GW${me.eliminated_gameweek}` : ''}
+                </span>
+              )}
+              {winner?.id === me.id && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950">
+                  Winner
+                </span>
+              )}
+            </div>
+
+            {me.status === 'alive' && (
+              <div className="text-sm text-slate-600 dark:text-slate-300">
+                {myPick ? (
+                  <p>
+                    This week's pick:{' '}
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      {myPick.team_name}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-amber-700 dark:text-amber-400 font-medium">
+                    No pick yet for this gameweek
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">You are not in this league.</p>
+        )}
+
+        {me && !winner && (
           <button
             type="button"
-            disabled={!hasUnsavedChanges || submitting}
-            onClick={handlePick}
-            className={`shrink-0 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-sm ${
-              hasUnsavedChanges && !submitting
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-            }`}
+            onClick={handleLeave}
+            disabled={leaving}
+            className="mt-4 text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
           >
-            {submitting
-              ? 'Saving...'
-              : locked && currentPick
-              ? 'Pick locked'
-              : hasUnsavedChanges
-              ? currentPick
-                ? 'Change pick'
-                : 'Confirm pick'
-              : currentPick
-              ? 'Locked in'
-              : 'Confirm pick'}
+            {leaving ? 'Leaving...' : 'Leave league'}
           </button>
+        )}
+      </div>
+
+      {isCreator && ['open', 'active'].includes(comp?.status) && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+            GW{comp?.current_gameweek} pick status (creator)
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">
+                Picked ({pickedAlive.length})
+              </p>
+              {pickedAlive.length === 0 ? (
+                <p className="text-slate-400 text-xs">Nobody yet</p>
+              ) : (
+                <ul className="space-y-1">
+                  {pickedAlive.map((p) => (
+                    <li key={p.id} className="text-slate-800 dark:text-slate-200">
+                      {p.display_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                Not picked ({notPickedAlive.length})
+              </p>
+              {notPickedAlive.length === 0 ? (
+                <p className="text-slate-400 text-xs">Everyone has picked</p>
+              ) : (
+                <ul className="space-y-1">
+                  {notPickedAlive.map((p) => (
+                    <li key={p.id} className="text-slate-800 dark:text-slate-200">
+                      {p.display_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-3">
+            Team names stay hidden here if "hide picks until KO" is on — only pick status is shown.
+          </p>
         </div>
-      </aside>
+      )}
+
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+          Still alive ({alive.length})
+        </h2>
+        {alive.length === 0 ? (
+          <p className="text-sm text-slate-500">No one left.</p>
+        ) : (
+          <ul className="space-y-2">
+            {alive.map((p) => (
+              <li key={p.id} className="flex items-center gap-2 text-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="font-medium text-slate-900 dark:text-white">{p.display_name}</span>
+                {winner?.id === p.id && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-amber-950">
+                    Winner
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {out.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+            Eliminated
+          </h2>
+          <ul className="space-y-2">
+            {out.map((p) => (
+              <li key={p.id} className="flex items-center justify-between text-sm gap-2">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  <span className="text-slate-700 dark:text-slate-300">{p.display_name}</span>
+                </span>
+                <span className="text-xs font-semibold text-red-600 dark:text-red-400">
+                  Out GW{p.eliminated_gameweek || '?'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {winner && (
+        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl p-5">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Winner</p>
+          <p className="text-lg font-bold text-amber-950 dark:text-amber-100 mt-1">
+            {winner.display_name}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
