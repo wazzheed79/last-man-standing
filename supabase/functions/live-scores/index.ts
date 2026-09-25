@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 const PL_COMPETITION_ID = 2021
+const LIVE_WINDOW_MS = 2.5 * 60 * 60 * 1000
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -73,6 +74,42 @@ Deno.serve(async (req) => {
         .order("matchday", { ascending: false })
         .limit(1)
       matchday = latest?.[0]?.matchday ?? 1
+    }
+
+    const now = Date.now()
+    const soonFrom = new Date(now - LIVE_WINDOW_MS).toISOString()
+    const soonTo = new Date(now + LIVE_WINDOW_MS).toISOString()
+
+    // Skip the external API call when there are no live or imminent fixtures.
+    // This keeps pg_cron polling cheap during quiet periods while still updating
+    // normally when a match is near kickoff or already underway.
+    const { data: imminentFixtures, error: imminentError } = await supabase
+      .from("fixtures_cache")
+      .select("match_id, utc_date, status")
+      .gte("utc_date", soonFrom)
+      .lte("utc_date", soonTo)
+      .limit(1)
+
+    if (imminentError) {
+      console.error("imminent fixtures query failed", imminentError)
+    }
+
+    if (!imminentFixtures || imminentFixtures.length === 0) {
+      console.log("No live/imminent fixtures. Skipping football-data.org fetch.", {
+        matchday,
+        now: new Date(now).toISOString(),
+        windowMs: LIVE_WINDOW_MS,
+      })
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: "No live or imminent fixtures within the configured window.",
+          matchday,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
     }
 
     const url =
@@ -171,6 +208,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        skipped: false,
         matchday,
         matches: matches.length,
         updated,
