@@ -1,27 +1,143 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
 <defs>
- <radialGradient id="bg"><stop stop-color="#263b58"/><stop offset=".72" stop-color="#0b1526"/><stop offset="1" stop-color="#050b15"/></radialGradient>
- <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a6"/><stop offset=".25" stop-color="#d89b22"/><stop offset=".55" stop-color="#fff1a2"/><stop offset="1" stop-color="#9b6512"/></linearGradient>
- <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".45" stop-color="#cbd2dc"/><stop offset="1" stop-color="#7f8997"/></linearGradient>
- <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-opacity=".5"/></filter>
- <clipPath id="disc"><circle cx="400" cy="400" r="350"/></clipPath>
+  <!-- Background -->
+  <radialGradient id="bg" cx="50%" cy="42%" r="65%">
+    <stop stop-color="#2a4060"/>
+    <stop offset=".55" stop-color="#0d1a2e"/>
+    <stop offset="1" stop-color="#04080f"/>
+  </radialGradient>
+
+  <!-- Rich gold metal -->
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#fff6c8"/>
+    <stop offset=".18" stop-color="#f0c14d"/>
+    <stop offset=".4" stop-color="#d4a017"/>
+    <stop offset=".65" stop-color="#fff1a2"/>
+    <stop offset="1" stop-color="#8a5a0c"/>
+  </linearGradient>
+
+  <!-- Brighter top-edge gold for bevels -->
+  <linearGradient id="goldBevel" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#fff8d6"/>
+    <stop offset=".35" stop-color="#e8b84a"/>
+    <stop offset="1" stop-color="#9b6512"/>
+  </linearGradient>
+
+  <!-- Silver / chrome for LAST MAN -->
+  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#ffffff"/>
+    <stop offset=".3" stop-color="#e8eef5"/>
+    <stop offset=".6" stop-color="#a8b4c4"/>
+    <stop offset="1" stop-color="#5c6778"/>
+  </linearGradient>
+
+  <!-- Soft outer drop -->
+  <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity=".55"/>
+  </filter>
+
+  <!-- Strong emboss for raised text -->
+  <filter id="emboss" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="3" stdDeviation="1.5" flood-color="#000" flood-opacity=".7"/>
+    <feDropShadow dx="0" dy="-1.5" stdDeviation="1" flood-color="#fff" flood-opacity=".35"/>
+  </filter>
+
+  <!-- Extra deep relief for STANDING -->
+  <filter id="deepEmboss" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="5" stdDeviation="2.5" flood-color="#000" flood-opacity=".75"/>
+    <feDropShadow dx="0" dy="-2" stdDeviation="1.2" flood-color="#fff8d0" flood-opacity=".4"/>
+  </filter>
+
+  <!-- Banner shadow -->
+  <filter id="bannerShadow" x="-15%" y="-15%" width="130%" height="140%">
+    <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".5"/>
+  </filter>
+
+  <clipPath id="disc">
+    <circle cx="400" cy="400" r="348"/>
+  </clipPath>
 </defs>
-<circle cx="400" cy="400" r="382" fill="#050914" stroke="#6b4b16" stroke-width="12"/>
-<circle cx="400" cy="400" r="370" fill="url(#gold)"/>
-<circle cx="400" cy="400" r="346" fill="url(#bg)" stroke="#f6cf68" stroke-width="5"/>
-<g clip-path="url(#disc)" opacity=".55">
- <rect x="0" y="560" width="800" height="240" fill="#0d4829"/>
- <path d="M70 650H730M400 560V800M250 560v240M550 560v240" stroke="#fff" stroke-width="3" opacity=".35"/>
- <ellipse cx="400" cy="720" rx="115" ry="45" fill="none" stroke="#fff" stroke-width="3" opacity=".45"/>
+
+<!-- Outer dark ring -->
+<circle cx="400" cy="400" r="390" fill="#03070e"/>
+
+<!-- Gold rim (thick, metallic) -->
+<circle cx="400" cy="400" r="378" fill="url(#gold)" stroke="#6b4a12" stroke-width="6"/>
+
+<!-- Inner gold bevel ring -->
+<circle cx="400" cy="400" r="358" fill="none" stroke="url(#goldBevel)" stroke-width="10"/>
+
+<!-- Main disc -->
+<circle cx="400" cy="400" r="348" fill="url(#bg)" stroke="#f0c85a" stroke-width="4"/>
+
+<!-- Pitch / grass section -->
+<g clip-path="url(#disc)" opacity=".6">
+  <rect x="0" y="555" width="800" height="250" fill="#0a3d24"/>
+  <path d="M60 650H740M400 555V800M240 555v245M560 555v245" stroke="#fff" stroke-width="2.5" opacity=".3"/>
+  <ellipse cx="400" cy="720" rx="120" ry="48" fill="none" stroke="#fff" stroke-width="2.5" opacity=".4"/>
 </g>
-<path d="M290 205 L330 130 L400 165 L470 130 L510 205 L475 245 L325 245 Z" fill="url(#gold)" stroke="#8b5a10" stroke-width="8" filter="url(#shadow)"/>
-<circle cx="330" cy="135" r="10" fill="#ffe79a"/><circle cx="400" cy="165" r="10" fill="#ffe79a"/><circle cx="470" cy="135" r="10" fill="#ffe79a"/>
-<circle cx="400" cy="290" r="92" fill="#111b2c" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
-<path d="M400 220l23 17 28-2 9 27 24 16-15 25 7 28-28 7-18 22-25-15-25 15-18-22-28-7 7-28-15-25 24-16 9-27 28 2z" fill="url(#silver)" stroke="#252c38" stroke-width="8"/>
-<path d="M400 238v42M358 266l34 20M442 266l-34 20M375 330l25-25M425 330l-25-25" stroke="#202735" stroke-width="9" fill="none"/>
-<path d="M150 335 Q400 285 650 335 L625 500 Q400 550 175 500 Z" fill="#0b1830" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
-<text x="400" y="405" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="84" font-weight="900" fill="url(#silver)" stroke="#0a101b" stroke-width="5" paint-order="stroke">LAST MAN</text>
-<text x="400" y="478" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="72" font-weight="900" fill="url(#gold)" stroke="#3e2708" stroke-width="4" paint-order="stroke">STANDING</text>
-<path d="M260 510 Q400 535 540 510" fill="none" stroke="#f4c85b" stroke-width="6"/>
-<path d="M400 528l8 17 19 2-14 13 4 19-17-9-17 9 4-19-14-13 19-2z" fill="url(#gold)"/>
+
+<!-- Crown (raised) -->
+<path d="M285 200 L328 118 L400 158 L472 118 L515 200 L478 248 L322 248 Z"
+      fill="url(#gold)" stroke="#7a4e0c" stroke-width="7" filter="url(#softShadow)"/>
+<!-- Crown jewels -->
+<circle cx="328" cy="125" r="11" fill="#fff4b8" stroke="#c9a020" stroke-width="2"/>
+<circle cx="400" cy="155" r="12" fill="#fff4b8" stroke="#c9a020" stroke-width="2"/>
+<circle cx="472" cy="125" r="11" fill="#fff4b8" stroke="#c9a020" stroke-width="2"/>
+
+<!-- Central medallion -->
+<circle cx="400" cy="288" r="95" fill="#0c1524" stroke="url(#gold)" stroke-width="11" filter="url(#softShadow)"/>
+
+<!-- Star / figure (silver) -->
+<path d="M400 215l25 18 30-2 10 29 26 17-16 27 8 30-30 8-19 24-27-16-27 16-19-24-30-8 8-30-16-27 26-17 10-29 30 2z"
+      fill="url(#silver)" stroke="#1a2230" stroke-width="7"/>
+<path d="M400 235v45M355 265l36 22M445 265l-36 22M372 335l27-27M428 335l-27-27"
+      stroke="#1a2230" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+<!-- Banner (raised plate) -->
+<path d="M145 330 Q400 275 655 330 L628 505 Q400 560 172 505 Z"
+      fill="#081422" stroke="url(#gold)" stroke-width="11" filter="url(#bannerShadow)"/>
+
+<!-- Inner banner highlight for depth -->
+<path d="M165 345 Q400 295 635 345 L615 485 Q400 530 185 485 Z"
+      fill="none" stroke="#1a2a40" stroke-width="3" opacity=".6"/>
+
+<!-- ===== EMBOSSED TEXT ===== -->
+
+<!-- LAST MAN – deep dark under-layer for thickness -->
+<text x="400" y="408" text-anchor="middle"
+      font-family="Arial Black, Impact, sans-serif"
+      font-size="86" font-weight="900"
+      fill="#050a12" opacity=".9">LAST MAN</text>
+
+<!-- LAST MAN – main silver with emboss -->
+<text x="400" y="405" text-anchor="middle"
+      font-family="Arial Black, Impact, sans-serif"
+      font-size="86" font-weight="900"
+      fill="url(#silver)"
+      stroke="#0a101b" stroke-width="4"
+      paint-order="stroke"
+      filter="url(#emboss)">LAST MAN</text>
+
+<!-- STANDING – dark under-layer -->
+<text x="400" y="482" text-anchor="middle"
+      font-family="Arial Black, Impact, sans-serif"
+      font-size="74" font-weight="900"
+      fill="#2a1805" opacity=".95">STANDING</text>
+
+<!-- STANDING – main gold with strong emboss -->
+<text x="400" y="478" text-anchor="middle"
+      font-family="Arial Black, Impact, sans-serif"
+      font-size="74" font-weight="900"
+      fill="url(#gold)"
+      stroke="#3e2708" stroke-width="3.5"
+      paint-order="stroke"
+      filter="url(#deepEmboss)">STANDING</text>
+
+<!-- Decorative underline -->
+<path d="M250 512 Q400 540 550 512" fill="none" stroke="#f0c85a" stroke-width="5" stroke-linecap="round"/>
+
+<!-- Star below -->
+<path d="M400 530l9 19 21 2-15 15 4 21-19-10-19 10 4-21-15-15 21-2z"
+      fill="url(#gold)" stroke="#7a4e0c" stroke-width="2" filter="url(#emboss)"/>
 </svg>
