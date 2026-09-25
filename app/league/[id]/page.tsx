@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import LeagueCycleHistory from '@/components/league/LeagueCycleHistory'
 
 export default function LeagueOverviewPage() {
   const params = useParams()
@@ -280,6 +281,15 @@ export default function LeagueOverviewPage() {
         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-sm">
           {notifMsg}
         </div>
+      )}
+
+      {comp && players.length > 0 && (
+        <LeagueCycleHistory
+          players={players}
+          picks={allPicks}
+          cycleNumber={Number(comp.cycle_number ?? 1)}
+          winnerPlayerId={comp.winner_player_id ?? null}
+        />
       )}
 
       {needsPick && (
