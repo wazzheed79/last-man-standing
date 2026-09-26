@@ -19,10 +19,12 @@ export default function LeagueCycleHistory({
   players,
   picks,
   cycleNumber,
+  winnerPlayerId = null,
 }: {
   players: Player[]
   picks: PickRow[]
   cycleNumber: number
+  winnerPlayerId?: string | null
 }) {
   const cyclePicks = useMemo(
     () =>
@@ -51,6 +53,9 @@ export default function LeagueCycleHistory({
 
   const alive = players.filter((p) => p.status === 'alive').length
   const out = players.filter((p) => p.status === 'eliminated').length
+  const winner = winnerPlayerId
+    ? players.find((p) => p.id === winnerPlayerId)
+    : null
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
@@ -62,6 +67,11 @@ export default function LeagueCycleHistory({
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
             Cycle {cycleNumber}
           </h2>
+          {winner && (
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1 font-medium">
+              Winner: {winner.display_name || 'Player'}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -92,11 +102,17 @@ export default function LeagueCycleHistory({
           <tbody>
             {players.map((player) => {
               const row = playerMatrix.get(player.id) ?? {}
+              const isWinner = winnerPlayerId === player.id
 
               return (
                 <tr key={player.id} className="border-t border-slate-200 dark:border-slate-700">
                   <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
                     {player.display_name || 'Player'}
+                    {isWinner && (
+                      <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-400 text-amber-950">
+                        Winner
+                      </span>
+                    )}
                   </td>
 
                   {gameweeks.map((gw) => (
