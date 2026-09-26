@@ -288,7 +288,6 @@ export default function LeagueOverviewPage() {
           players={players}
           picks={allPicks}
           cycleNumber={Number(comp.cycle_number ?? 1)}
-          winnerPlayerId={comp.winner_player_id ?? null}
         />
       )}
 
