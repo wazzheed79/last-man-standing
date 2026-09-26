@@ -21,13 +21,13 @@ export default function CreateCompetitionPage() {
   const [competitionId, setCompetitionId] = useState('')
   const [error, setError] = useState('')
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     loadUpcomingGameweeks()
   }, [])
 
   const loadUpcomingGameweeks = async () => {
+    const supabase = createClient()
     const { data } = await supabase
       .from('fixtures_cache')
       .select('matchday, utc_date')
@@ -57,6 +57,7 @@ export default function CreateCompetitionPage() {
     setJoinCode('')
 
     try {
+      const supabase = createClient()
       const { data, error } = await supabase.rpc('create_competition', {
         p_name: name,
         p_display_name: displayName.trim() || null,
