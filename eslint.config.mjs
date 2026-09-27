@@ -6,8 +6,14 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "supabase/functions/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  {
+    files: ["app/**/*.tsx", "components/**/*.tsx"],
+    rules: {
       "@typescript-eslint/no-use-before-define": "off",
       "react/no-unescaped-entities": "off",
       "react-hooks/set-state-in-effect": "off",
