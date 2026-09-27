@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState, type FocusEvent, type MouseEvent } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
 type FormResult = { result: 'W' | 'D' | 'L'; label: string }
@@ -17,7 +17,6 @@ export default function LeagueTablePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expandedTeamId, setExpandedTeamId] = useState<number | null>(null)
-  const [formPreview, setFormPreview] = useState<{ teamName: string; form: FormResult[]; x: number; y: number } | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -81,21 +80,6 @@ export default function LeagueTablePage() {
       const opponent = isHome ? match.away_team_name : match.home_team_name
       const result: FormResult['result'] = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D'
       return { result, label: `${result} ${teamScore}-${opponentScore} vs ${clean(opponent)}` }
-    })
-  }
-
-  const showFormPreview = (event: MouseEvent<HTMLButtonElement> | FocusEvent<HTMLButtonElement>, teamName: string, form: FormResult[]) => {
-    if (!form.length) {
-      setFormPreview(null)
-      return
-    }
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const width = Math.min(320, window.innerWidth - 24)
-    setFormPreview({
-      teamName,
-      form,
-      x: Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)),
-      y: Math.max(12, Math.min(bounds.bottom + 8, window.innerHeight - 190)),
     })
   }
 
@@ -170,23 +154,6 @@ export default function LeagueTablePage() {
           <span className="league-card-heading__count">{standings.length} clubs</span>
         </div>
 
-        {formPreview && (
-          <div id="league-form-preview" className="league-form-preview" role="tooltip" style={{ left: formPreview.x, top: formPreview.y }}>
-            <div className="league-form-preview__heading">
-              <strong>{formPreview.teamName}</strong>
-              <span>Last {formPreview.form.length} results</span>
-            </div>
-            <ol>
-              {formPreview.form.map((item, index) => (
-                <li key={`${formPreview.teamName}-${index}`}>
-                  <span className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}>{item.result}</span>
-                  <span>{item.label}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-
         <div className="w-full">
           <table className="league-table w-full table-fixed border-collapse text-sm" aria-label="Premier League standings">
             <thead>
@@ -218,14 +185,9 @@ export default function LeagueTablePage() {
                         <button
                           type="button"
                           className="league-table__club-toggle"
-                          aria-label={`Show ${teamName} standings and recent results`}
+                          aria-label={`${expanded ? 'Hide' : 'Show'} ${teamName} standings and recent results`}
                           aria-expanded={expanded}
                           aria-controls={detailsId}
-                          aria-describedby={formPreview?.teamName === teamName ? 'league-form-preview' : undefined}
-                          onMouseEnter={(event) => showFormPreview(event, teamName, form)}
-                          onMouseLeave={() => setFormPreview(null)}
-                          onFocus={(event) => showFormPreview(event, teamName, form)}
-                          onBlur={() => setFormPreview(null)}
                           onClick={() => setExpandedTeamId(expanded ? null : teamId)}
                         >
                           {crest ? <img src={crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" /> : <span className="league-table__crest-fallback">{clean(teamName).slice(0, 2).toUpperCase()}</span>}
@@ -256,12 +218,15 @@ export default function LeagueTablePage() {
                             </div>
                           </div>
                           <div className="league-table__detail-group league-table__detail-group--form">
-                            <span className="league-table__detail-label">Last five</span>
-                            <div className="league-table__expanded-form">
+                            <span className="league-table__detail-label">Last five results</span>
+                            <ol className="league-table__recent-results">
                               {form.length ? form.map((item, i) => (
-                                <span key={`${teamId}-${i}`} title={item.label} aria-label={item.label} className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}>{item.result}</span>
-                              )) : <span className="league-table__no-form">No recent results</span>}
-                            </div>
+                                <li key={`${teamId}-${i}`}>
+                                  <span className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}>{item.result}</span>
+                                  <span>{item.label.substring(2)}</span>
+                                </li>
+                              )) : <li className="league-table__no-form">No recent results</li>}
+                            </ol>
                           </div>
                         </div>
                       </td>
