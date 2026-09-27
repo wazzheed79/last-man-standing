@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
 
     let updated = 0
     let skipped_manual = 0
-    let errors: string[] = []
+    const errors: string[] = []
 
     for (const m of matches) {
       const match_id = m.id
