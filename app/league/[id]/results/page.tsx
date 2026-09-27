@@ -102,18 +102,17 @@ export default function LeagueResultsPage() {
                             {fixture.home_team_crest && <img src={fixture.home_team_crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10" />}
                             <span title={fixture.home_team_name}>{shortTeamName(fixture.home_team_name)}</span>
                           </span>
-                          <span className="league-result-team__score">{homeScore}</span>
                         </div>
-                        <div className="league-result-divider"><span>—</span><span>FT</span></div>
+                        <div className="league-result-scoreboard" aria-label={`Full time: ${homeScore} to ${awayScore}`}>
+                          <span>{homeScore}</span><b>–</b><span>{awayScore}</span><em>FT</em>
+                        </div>
                         <div className={`league-result-team league-result-team--away ${awayWon ? 'league-result-team--winner' : ''}`}>
-                          <span className="league-result-team__score">{awayScore}</span>
                           <span className="league-result-team__identity league-result-team__identity--away">
                             <span title={fixture.away_team_name}>{shortTeamName(fixture.away_team_name)}</span>
                             {fixture.away_team_crest && <img src={fixture.away_team_crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10" />}
                           </span>
                         </div>
                       </div>
-                      <div className="league-result-row__mobile-score">{homeScore} <span>–</span> {awayScore} <b>FT</b></div>
                     </article>
                   )
                 })}

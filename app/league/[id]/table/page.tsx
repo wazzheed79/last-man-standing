@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
 type FormResult = { result: 'W' | 'D' | 'L'; label: string }
@@ -16,7 +16,7 @@ export default function LeagueTablePage() {
   const [finishedFixtures, setFinishedFixtures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null)
+  const [expandedTeamId, setExpandedTeamId] = useState<number | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -154,23 +154,13 @@ export default function LeagueTablePage() {
           <span className="league-card-heading__count">{standings.length} clubs</span>
         </div>
 
-        {tip && (
-          <div
-            className="fixed z-50 pointer-events-none rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white shadow-xl"
-            style={{ left: tip.x, top: tip.y, transform: 'translate(-50%, -115%)' }}
-          >
-            {tip.text}
-          </div>
-        )}
-
-        <div className="overflow-x-auto">
-          <table className="league-table w-full min-w-[920px] border-collapse text-sm" aria-label="Premier League standings">
+        <div className="w-full">
+          <table className="league-table w-full table-fixed border-collapse text-sm" aria-label="Premier League standings">
             <thead>
               <tr>
                 <th className="league-table__rank">Pos</th>
                 <th className="league-table__club">Club</th>
-                <th className="league-table__form">Last 5</th>
-                <th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th>
+                <th className="league-table__played">P</th>
                 <th className="league-table__points">Pts</th>
               </tr>
             </thead>
@@ -184,49 +174,60 @@ export default function LeagueTablePage() {
                 const points = stat(row, 'points', 'pts')
                 const goalDifference = stat(row, 'goalDifference', 'gd')
                 const crest = team.crest || team.team_crest
+                const expanded = expandedTeamId === teamId
+                const detailsId = `team-details-${teamId}`
 
                 return (
-                  <tr key={teamId} className={`${index === 0 ? 'league-table__row--leader' : ''} ${position <= 4 ? 'league-table__row--top-four' : ''}`}>
-                    <td className="league-table__rank-cell"><span className={index === 0 ? 'league-table__rank-badge league-table__rank-badge--leader' : 'league-table__rank-badge'}>{String(position).padStart(2, '0')}</span></td>
-                    <td className="league-table__club-cell">
-                      <div className="flex min-w-0 items-center gap-3">
-                          {crest ? <img src={crest} alt="" className="h-9 w-9 shrink-0 object-contain" /> : <span className="league-table__crest-fallback">{clean(teamName).slice(0, 2).toUpperCase()}</span>}
-                        <span className="min-w-0 truncate font-bold" title={teamName}>{team.shortName || clean(teamName)}</span>
-                      </div>
-                    </td>
-                    <td className="league-table__form-cell">
-                      <div className="flex items-center gap-1.5">
-                        {form.length ? form.map((item, i) => (
-                          <button
-                            key={`${teamId}-${i}`}
-                            type="button"
-                            aria-label={`${teamName}: ${item.label}`}
-                            onMouseEnter={(event) => {
-                              const bounds = event.currentTarget.getBoundingClientRect()
-                              setTip({ text: item.label, x: bounds.left + bounds.width / 2, y: bounds.top })
-                            }}
-                            onMouseLeave={() => setTip(null)}
-                            onFocus={(event) => {
-                              const bounds = event.currentTarget.getBoundingClientRect()
-                              setTip({ text: item.label, x: bounds.left + bounds.width / 2, y: bounds.top })
-                            }}
-                            onBlur={() => setTip(null)}
-                            className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}
-                          >
-                            {item.result}
-                          </button>
-                        )) : <span className="text-xs text-slate-400">—</span>}
-                      </div>
-                    </td>
-                    <td>{stat(row, 'playedGames', 'played')}</td>
-                    <td>{stat(row, 'won', 'wins')}</td>
-                    <td>{stat(row, 'draw', 'draws')}</td>
-                    <td>{stat(row, 'lost', 'losses')}</td>
-                    <td>{stat(row, 'goalsFor', 'gf')}</td>
-                    <td>{stat(row, 'goalsAgainst', 'ga')}</td>
-                    <td className={goalDifference > 0 ? 'league-table__positive' : goalDifference < 0 ? 'league-table__negative' : ''}>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</td>
-                    <td className="league-table__points-cell"><span>{points}</span></td>
-                  </tr>
+                  <Fragment key={teamId}>
+                    <tr className={`league-table__summary-row ${index === 0 ? 'league-table__row--leader' : ''} ${position <= 4 ? 'league-table__row--top-four' : ''}`}>
+                      <td className="league-table__rank-cell"><span className={index === 0 ? 'league-table__rank-badge league-table__rank-badge--leader' : 'league-table__rank-badge'}>{String(position).padStart(2, '0')}</span></td>
+                      <td className="league-table__club-cell">
+                        <button
+                          type="button"
+                          className="league-table__club-toggle"
+                          aria-expanded={expanded}
+                          aria-controls={detailsId}
+                          onClick={() => setExpandedTeamId(expanded ? null : teamId)}
+                        >
+                          {crest ? <img src={crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" /> : <span className="league-table__crest-fallback">{clean(teamName).slice(0, 2).toUpperCase()}</span>}
+                          <span className="min-w-0 flex-1 truncate font-bold" title={teamName}>{team.shortName || clean(teamName)}</span>
+                          <span className={`league-table__chevron ${expanded ? 'league-table__chevron--open' : ''}`} aria-hidden="true">⌄</span>
+                        </button>
+                      </td>
+                      <td className="league-table__played-cell">{stat(row, 'playedGames', 'played')}</td>
+                      <td className="league-table__points-cell"><span>{points}</span></td>
+                    </tr>
+                    <tr id={detailsId} hidden={!expanded} className="league-table__details-row">
+                      <td colSpan={4}>
+                        <div className="league-table__details" aria-label={`${teamName} statistics and recent form`}>
+                          <div className="league-table__detail-group">
+                            <span className="league-table__detail-label">Record</span>
+                            <div className="league-table__detail-stats">
+                              <span><b>{stat(row, 'won', 'wins')}</b> Wins</span>
+                              <span><b>{stat(row, 'draw', 'draws')}</b> Draws</span>
+                              <span><b>{stat(row, 'lost', 'losses')}</b> Losses</span>
+                            </div>
+                          </div>
+                          <div className="league-table__detail-group">
+                            <span className="league-table__detail-label">Goals</span>
+                            <div className="league-table__detail-stats">
+                              <span><b>{stat(row, 'goalsFor', 'gf')}</b> For</span>
+                              <span><b>{stat(row, 'goalsAgainst', 'ga')}</b> Against</span>
+                              <span><b className={goalDifference > 0 ? 'league-table__positive' : goalDifference < 0 ? 'league-table__negative' : ''}>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b> Difference</span>
+                            </div>
+                          </div>
+                          <div className="league-table__detail-group league-table__detail-group--form">
+                            <span className="league-table__detail-label">Last five</span>
+                            <div className="league-table__expanded-form">
+                              {form.length ? form.map((item, i) => (
+                                <span key={`${teamId}-${i}`} title={item.label} aria-label={item.label} className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}>{item.result}</span>
+                              )) : <span className="league-table__no-form">No recent results</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -239,8 +240,7 @@ export default function LeagueTablePage() {
             <span><b className="league-key league-key--draw" /> Draw</span>
             <span><b className="league-key league-key--red" /> Loss</span>
           </div>
-          <span className="hidden sm:inline">Hover or focus form to see the score</span>
-          <span className="sm:hidden">Swipe sideways to see all stats</span>
+          <span>Tap a club to see its record and recent form</span>
         </div>
       </section>
     </div>
