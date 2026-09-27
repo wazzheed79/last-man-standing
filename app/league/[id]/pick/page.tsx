@@ -115,12 +115,15 @@ export default function LeaguePickPage() {
         .select('*')
         .eq('player_id', me.id)
 
-      const allPicks = picksData || []
-      const thisWeek = allPicks.find((p: any) => p.gameweek === gw) || null
+      const cycleNumber = Number(competition.cycle_number ?? 1)
+      const currentCyclePicks = (picksData || []).filter(
+        (p: any) => Number(p.cycle_number ?? 1) === cycleNumber
+      )
+      const thisWeek = currentCyclePicks.find((p: any) => p.gameweek === gw) || null
       setCurrentPick(thisWeek)
 
       setUsedTeams(
-        allPicks
+        currentCyclePicks
           .filter((p: any) => p.gameweek !== gw)
           .map((p: any) => ({ id: p.team_id as number, name: p.team_name as string }))
       )
@@ -579,3 +582,4 @@ export default function LeaguePickPage() {
     </div>
   )
 }
+

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
 export default function ProcessResultsPage() {
-  const [matchday, setMatchday] = useState(2)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -36,20 +35,27 @@ export default function ProcessResultsPage() {
     setResult(null)
 
     try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session) throw new Error('Please sign in again before running weekly updates.')
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-results`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+            Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ matchday }),
+          body: JSON.stringify({}),
         }
       )
 
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
+      if (!res.ok || data.success === false || data.error) {
+        throw new Error(data.error || 'Could not process the current gameweek.')
+      }
       setResult(data)
     } catch (err: any) {
       setError(err.message)
@@ -71,8 +77,8 @@ export default function ProcessResultsPage() {
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-lg mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Process Results</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Update picks and eliminate players</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Run Weekly Updates</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Update results across active leagues</p>
           </div>
           <button
             onClick={() => router.push('/')}
@@ -85,29 +91,12 @@ export default function ProcessResultsPage() {
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-5">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Matchday / Gameweek
-            </label>
-            <select
-              className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-white rounded-lg px-3 py-2.5 text-sm"
-              value={matchday}
-              onChange={(e) => setMatchday(Number(e.target.value))}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38].map((n) => (
-                <option key={n} value={n}>
-                  Gameweek {n}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             onClick={handleProcess}
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-medium transition"
           >
-            {loading ? 'Processing...' : 'Process Results'}
+            {loading ? 'Updating...' : 'Run weekly updates'}
           </button>
         </div>
 
@@ -119,24 +108,19 @@ export default function ProcessResultsPage() {
 
         {result && (
           <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-xl text-sm space-y-1">
-            <p className="font-semibold">Results processed successfully</p>
-            <p>Gameweek: {result.matchday}</p>
-            <p>Picks updated: {result.updated_picks}</p>
-            <p>Players eliminated: {result.eliminated_players}</p>
-            {result.message && <p>{result.message}</p>}
+            <p className="font-semibold">Weekly updates completed</p>
+            <p>Updates applied: {result.data ?? 0}</p>
           </div>
         )}
 
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-sm text-amber-800 dark:text-amber-200">
-          <p className="font-medium mb-1">How to use</p>
-          <ol className="list-decimal list-inside space-y-1 text-amber-700 dark:text-amber-300">
-            <li>Make sure fixtures for the gameweek are marked as FINISHED with scores</li>
-            <li>Select the gameweek above</li>
-            <li>Click Process Results</li>
-            <li>Players who drew or lost will be eliminated</li>
-          </ol>
+          <p className="font-medium mb-1">What this does</p>
+          <p className="text-amber-700 dark:text-amber-300">
+            Checks the current gameweek in every active league, applies finished scores and missed-pick rules, and advances leagues when all fixtures are resolved. This also runs automatically every five minutes.
+          </p>
         </div>
       </main>
     </div>
   )
 }
+
