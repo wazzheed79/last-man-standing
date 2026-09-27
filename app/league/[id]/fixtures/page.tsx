@@ -16,13 +16,15 @@ export default function LeagueFixturesPage() {
   const [thisWeek, setThisWeek] = useState<any[]>([])
   const [nextWeek, setNextWeek] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     void load()
     const refresh = () => {
       if (document.visibilityState === 'visible') void load()
     }
-    const interval = window.setInterval(refresh, 30_000)
+    const interval = window.setInterval(refresh, 2 * 60_000)
     window.addEventListener('focus', refresh)
 
     return () => {
@@ -32,6 +34,7 @@ export default function LeagueFixturesPage() {
   }, [leagueId])
 
   const load = async () => {
+    setLoadError('')
     try {
       const {
         data: { user },
@@ -47,22 +50,29 @@ export default function LeagueFixturesPage() {
         .eq('id', leagueId)
         .single()
 
+      if (!comp) throw new Error('Could not load this league.')
+
       const gw = comp?.current_gameweek || 1
       setGameweek(gw)
 
-      const { data: a } = await supabase
+      const { data: a, error: thisWeekError } = await supabase
         .from('fixtures_cache')
         .select('*')
         .eq('matchday', gw)
         .order('utc_date')
+      if (thisWeekError) throw thisWeekError
       setThisWeek(a || [])
 
-      const { data: b } = await supabase
+      const { data: b, error: nextWeekError } = await supabase
         .from('fixtures_cache')
         .select('*')
         .eq('matchday', gw + 1)
         .order('utc_date')
+      if (nextWeekError) throw nextWeekError
       setNextWeek(b || [])
+      setLastUpdated(new Date())
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Could not refresh fixtures.')
     } finally {
       setLoading(false)
     }
@@ -149,6 +159,14 @@ export default function LeagueFixturesPage() {
         <div className="league-intro-tag"><span className="league-intro-tag__icon">GW</span> Gameweek {gameweek}</div>
       </section>
 
+      <p className="flex items-center justify-between gap-3 px-1 text-xs text-slate-500 dark:text-slate-400">
+        <span>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading update time…'}</span>
+        <button type="button" onClick={() => void load()} className="font-semibold text-blue-700 hover:underline dark:text-blue-300">
+          Refresh now
+        </button>
+      </p>
+      {loadError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">Couldn&apos;t refresh fixtures: {loadError}</p>}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="league-stat-card"><span className="league-stat-card__label">This gameweek</span><span className="league-stat-card__value">{thisWeek.length}</span><span className="league-stat-card__detail">fixtures · GW {gameweek}</span></div>
         <div className="league-stat-card league-stat-card--leader"><span className="league-stat-card__label">Coming up next</span><span className="league-stat-card__value">{nextWeek.length}</span><span className="league-stat-card__detail">fixtures · GW {gameweek + 1}</span></div>
@@ -178,8 +196,7 @@ export default function LeagueFixturesPage() {
             nextWeek.map(row)
           ) : (
             <p className="p-4 text-sm text-slate-500">
-              No fixtures for next week yet. Run fetch-fixtures for matchday{' '}
-              {gameweek + 1}.
+              Fixtures for next week haven&apos;t loaded yet. Check back later or contact the league organiser if they remain missing.
             </p>
           )}
         </div>

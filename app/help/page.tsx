@@ -55,6 +55,17 @@ export default function HelpPage() {
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-2">For league organisers</h2>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            <li>For a postponed match, wait for the fixture feed to show the correct status. Don’t enter a guessed score.</li>
+            <li>If a finished score, team name, or matchday is wrong, correct it in the admin fixture editor and save it before processing results.</li>
+            <li>Weekly results are processed automatically. If you run the admin update manually, do it after checking the fixture statuses and scores.</li>
+            <li>After processing, review Results and Players to confirm picks and eliminations look right.</li>
+          </ol>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Fixture editing and manual weekly updates are restricted to administrators.</p>
+        </section>
+
+        <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-2">How it ends</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Last player standing wins the league. If everyone gets knocked

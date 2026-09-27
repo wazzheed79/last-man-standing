@@ -7,6 +7,8 @@ import { shortTeamName } from '@/lib/teamNames'
 export default function LeagueResultsPage() {
   const [fixtures, setFixtures] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [loadError, setLoadError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -14,7 +16,7 @@ export default function LeagueResultsPage() {
     const refresh = () => {
       if (document.visibilityState === 'visible') void load()
     }
-    const interval = window.setInterval(refresh, 60_000)
+    const interval = window.setInterval(refresh, 2 * 60_000)
     window.addEventListener('focus', refresh)
 
     return () => {
@@ -24,14 +26,22 @@ export default function LeagueResultsPage() {
   }, [])
 
   const load = async () => {
-    const { data } = await supabase
-      .from('fixtures_cache')
-      .select('*')
-      .in('status', ['FINISHED', 'FT', 'AWARDED'])
-      .order('matchday', { ascending: false })
-      .order('utc_date', { ascending: true })
-    setFixtures(data || [])
-    setLoading(false)
+    setLoadError('')
+    try {
+      const { data, error } = await supabase
+        .from('fixtures_cache')
+        .select('*')
+        .in('status', ['FINISHED', 'FT', 'AWARDED'])
+        .order('matchday', { ascending: false })
+        .order('utc_date', { ascending: true })
+      if (error) throw error
+      setFixtures(data || [])
+      setLastUpdated(new Date())
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Could not refresh results.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const formatKickoff = (iso: string) => {
@@ -73,6 +83,14 @@ export default function LeagueResultsPage() {
         </div>
         <div className="league-intro-tag"><span className="league-intro-tag__icon league-intro-tag__icon--red">FT</span> Match centre</div>
       </section>
+
+      <p className="flex items-center justify-between gap-3 px-1 text-xs text-slate-500 dark:text-slate-400">
+        <span>{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading update time…'}</span>
+        <button type="button" onClick={() => void load()} className="font-semibold text-blue-700 hover:underline dark:text-blue-300">
+          Refresh now
+        </button>
+      </p>
+      {loadError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">Couldn&apos;t refresh results: {loadError}</p>}
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Results summary">
         <div className="league-stat-card"><span className="league-stat-card__label">Matches completed</span><span className="league-stat-card__value">{fixtures.length}</span><span className="league-stat-card__detail">full-time scores</span></div>

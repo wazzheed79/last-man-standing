@@ -35,7 +35,7 @@ export default function LeagueOverviewPage() {
     const refresh = () => {
       if (document.visibilityState === 'visible') void load()
     }
-    const interval = window.setInterval(refresh, 30_000)
+    const interval = window.setInterval(refresh, 60_000)
     window.addEventListener('focus', refresh)
 
     return () => {
@@ -361,7 +361,7 @@ export default function LeagueOverviewPage() {
             {joinUrl && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 break-all">{joinUrl}</p>
             )}
-            <div className="flex flex-wrap gap-3 mt-2">
+            <div className="mt-2">
               <button
                 type="button"
                 onClick={copyJoin}
@@ -369,27 +369,37 @@ export default function LeagueOverviewPage() {
               >
                 {copied ? 'Copied!' : 'Copy join link'}
               </button>
-              <button
-                type="button"
-                onClick={shareAlive}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Share my status
-              </button>
-              <button
-                type="button"
-                onClick={exportCsv}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Export CSV
-              </button>
-              <button
-                type="button"
-                onClick={enableReminders}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Enable pick reminders
-              </button>
+              <details className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
+                <summary className="cursor-pointer text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
+                  More league tools
+                </summary>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+                  <button
+                    type="button"
+                    onClick={shareAlive}
+                    className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Share my status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={exportCsv}
+                    className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Export picks CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={enableReminders}
+                    className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Enable browser reminder
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Browser reminders only work while this browser stays open. Email reminders are not set up yet.
+                </p>
+              </details>
             </div>
           </div>
           {qrSrc && (

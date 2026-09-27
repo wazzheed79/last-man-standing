@@ -44,8 +44,15 @@ export default function LeaguePickPage() {
 
   useEffect(() => {
     load(true)
-    const interval = setInterval(() => load(false), 30000)
-    return () => clearInterval(interval)
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load(false)
+    }
+    const interval = window.setInterval(refresh, 60_000)
+    window.addEventListener('focus', refresh)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+    }
   }, [leagueId])
 
   const load = async (showLoading = false) => {
@@ -299,7 +306,7 @@ export default function LeaguePickPage() {
         <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           {lastUpdated
-            ? `Scores refresh every 30s - Updated ${lastUpdated.toLocaleTimeString()}`
+            ? `Refreshes about every minute · Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading scores...'}
         </p>
         <button
@@ -379,7 +386,7 @@ export default function LeaguePickPage() {
 
         {fixtures.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-500">
-            No fixtures for this gameweek yet. Try Refresh, or run fetch-fixtures.
+            Fixtures for this gameweek haven&apos;t loaded yet. Refresh shortly, or contact the league organiser if they remain missing.
           </div>
         ) : (
           fixtures.map((f) => {
@@ -582,4 +589,3 @@ export default function LeaguePickPage() {
     </div>
   )
 }
-
