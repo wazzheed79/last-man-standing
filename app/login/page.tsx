@@ -1,19 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Where to go after login / confirmed signup (e.g. /join?code=XYZ)
+  const nextParam = searchParams.get('next') || '/'
+  const safeNext =
+    nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/'
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'auth_callback') {
+      setMessage('Email link expired or invalid. Try signing in, or sign up again.')
+    }
+    // Pre-open Sign Up tab when coming from an invite
+    if (searchParams.get('mode') === 'signup') {
+      setIsSignUp(true)
+    }
+  }, [searchParams])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,19 +38,37 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const origin =
+          typeof window !== 'undefined' ? window.location.origin : ''
+        const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
+
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo,
+          },
         })
         if (error) throw error
-        setMessage('Check your email for the confirmation link!')
+
+        // Confirm email OFF → session returned immediately
+        if (data.session) {
+          router.push(safeNext)
+          router.refresh()
+          return
+        }
+
+        // Confirm email ON → user must click link (needs custom SMTP for non-team addresses)
+        setMessage(
+          'Account created. If email confirmation is on, check your inbox for the link. Otherwise try Login.'
+        )
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (error) throw error
-        router.push('/')
+        router.push(safeNext)
         router.refresh()
       }
     } catch (error: any) {
@@ -66,9 +100,15 @@ export default function LoginPage() {
             {isSignUp ? 'Create Account' : 'Login'}
           </h1>
 
-          {/* Option bar - segmented control */}
+          {safeNext.startsWith('/join') && (
+            <p className="mb-4 text-center text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg px-3 py-2">
+              After you sign in, you'll continue to join the league.
+            </p>
+          )}
+
           <div className="flex rounded-md overflow-hidden mb-6 border dark:border-slate-700">
             <button
+              type="button"
               onClick={() => setIsSignUp(false)}
               className={`flex-1 py-2 text-sm font-semibold transition-colors focus:outline-none ${
                 !isSignUp
@@ -79,6 +119,7 @@ export default function LoginPage() {
               Login
             </button>
             <button
+              type="button"
               onClick={() => setIsSignUp(true)}
               className={`flex-1 py-2 text-sm font-semibold transition-colors focus:outline-none ${
                 isSignUp
@@ -100,6 +141,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
               />
             </div>
@@ -114,10 +156,10 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
                 className="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
               />
 
-              {/* Forgot password link for login */}
               {!isSignUp && (
                 <div className="mt-2 text-right">
                   <button
@@ -134,7 +176,8 @@ export default function LoginPage() {
             {message && (
               <p
                 className={`text-sm ${
-                  message.includes('Check your email')
+                  message.toLowerCase().includes('check') ||
+                  message.toLowerCase().includes('created')
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-red-600 dark:text-red-400'
                 }`}
@@ -155,6 +198,7 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-sm text-slate-600 dark:text-slate-400">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
+              type="button"
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
@@ -163,11 +207,25 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Accent option bar below card to stand out */}
         <div className="mt-4 p-3 rounded-md bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm text-center text-sm text-slate-700 dark:text-slate-300">
-          <strong>Tip:</strong> Use the <em>Login</em> tab if you already have an account, otherwise create one with <em>Sign Up</em>.
+          <strong>Tip:</strong> Friends joining a league can use Sign Up — with
+          confirmation off they go straight in.
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
+          <p className="text-slate-500">Loading...</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
