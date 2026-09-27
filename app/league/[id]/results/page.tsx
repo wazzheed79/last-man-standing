@@ -10,7 +10,17 @@ export default function LeagueResultsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    load()
+    void load()
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    const interval = window.setInterval(refresh, 60_000)
+    window.addEventListener('focus', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+    }
   }, [])
 
   const load = async () => {
@@ -124,3 +134,4 @@ export default function LeagueResultsPage() {
     </div>
   )
 }
+

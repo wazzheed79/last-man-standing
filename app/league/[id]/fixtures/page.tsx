@@ -18,7 +18,17 @@ export default function LeagueFixturesPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    load()
+    void load()
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    const interval = window.setInterval(refresh, 30_000)
+    window.addEventListener('focus', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+    }
   }, [leagueId])
 
   const load = async () => {
@@ -177,3 +187,4 @@ export default function LeagueFixturesPage() {
     </div>
   )
 }
+

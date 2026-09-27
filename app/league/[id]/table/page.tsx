@@ -20,7 +20,17 @@ export default function LeagueTablePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    load()
+    void load()
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    const interval = window.setInterval(refresh, 5 * 60_000)
+    window.addEventListener('focus', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+    }
   }, [])
 
   const load = async () => {
@@ -250,3 +260,4 @@ export default function LeagueTablePage() {
     </div>
   )
 }
+
