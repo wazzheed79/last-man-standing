@@ -36,78 +36,92 @@ export default function LeagueResultsPage() {
   }
 
   const grouped: Record<number, any[]> = {}
-  fixtures.forEach((f) => {
-    if (!grouped[f.matchday]) grouped[f.matchday] = []
-    grouped[f.matchday].push(f)
+  fixtures.forEach((fixture) => {
+    if (!grouped[fixture.matchday]) grouped[fixture.matchday] = []
+    grouped[fixture.matchday].push(fixture)
   })
-  const matchdays = Object.keys(grouped)
-    .map(Number)
-    .sort((a, b) => b - a)
+  const matchdays = Object.keys(grouped).map(Number).sort((a, b) => b - a)
+  const goals = fixtures.reduce((sum, fixture) => sum + Number(fixture.home_score || 0) + Number(fixture.away_score || 0), 0)
+  const latestMatchday = matchdays[0]
 
-  if (loading) return <p className="text-slate-500 text-center">Loading results...</p>
+  if (loading) {
+    return (
+      <div className="space-y-4" aria-live="polite">
+        <div className="league-page-intro animate-pulse"><div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-700" /><div className="mt-4 h-8 w-56 rounded bg-slate-200 dark:bg-slate-700" /></div>
+        <div className="h-64 rounded-2xl bg-white shadow-sm dark:bg-slate-900" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-5">
-      {matchdays.length === 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-slate-600 text-sm">
-          No finished matches yet.
+    <div className="space-y-5 sm:space-y-6">
+      <section className="league-page-intro">
+        <div>
+          <p className="league-eyebrow"><span className="league-eyebrow__dot league-eyebrow__dot--red" /> Full time</p>
+          <h2 className="league-page-title">Results</h2>
+          <p className="league-page-subtitle">Every final score, grouped by matchday, with the winning side easy to spot.</p>
+        </div>
+        <div className="league-intro-tag"><span className="league-intro-tag__icon league-intro-tag__icon--red">FT</span> Match centre</div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Results summary">
+        <div className="league-stat-card"><span className="league-stat-card__label">Matches completed</span><span className="league-stat-card__value">{fixtures.length}</span><span className="league-stat-card__detail">full-time scores</span></div>
+        <div className="league-stat-card"><span className="league-stat-card__label">Goals scored</span><span className="league-stat-card__value">{goals}</span><span className="league-stat-card__detail">across completed fixtures</span></div>
+        <div className="league-stat-card league-stat-card--leader"><span className="league-stat-card__label">Latest matchday</span><span className="league-stat-card__value">{latestMatchday ? `GW ${latestMatchday}` : '—'}</span><span className="league-stat-card__detail">{latestMatchday ? `${grouped[latestMatchday].length} matches shown` : 'No matchdays yet'}</span></div>
+      </section>
+
+      {matchdays.length === 0 ? (
+        <div className="league-empty-state">
+          <span className="league-empty-state__eyebrow">Match centre</span>
+          <h2>No finished matches yet</h2>
+          <p>Completed results will appear here when they are available.</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {matchdays.map((matchday) => (
+            <section key={matchday} className="league-matchday-card">
+              <div className="league-matchday-heading">
+                <div>
+                  <p className="league-matchday-heading__eyebrow">Matchday {matchday}</p>
+                  <h3>Final scores</h3>
+                </div>
+                <span className="league-matchday-heading__count">{grouped[matchday].length} matches</span>
+              </div>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {grouped[matchday].map((fixture) => {
+                  const homeScore = Number(fixture.home_score || 0)
+                  const awayScore = Number(fixture.away_score || 0)
+                  const homeWon = homeScore > awayScore
+                  const awayWon = awayScore > homeScore
+                  return (
+                    <article key={fixture.match_id} className="league-result-row">
+                      <p className="league-result-row__date">{formatKickoff(fixture.utc_date)}</p>
+                      <div className="league-result-row__teams">
+                        <div className={`league-result-team ${homeWon ? 'league-result-team--winner' : ''}`}>
+                          <span className="league-result-team__identity">
+                            {fixture.home_team_crest && <img src={fixture.home_team_crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10" />}
+                            <span title={fixture.home_team_name}>{shortTeamName(fixture.home_team_name)}</span>
+                          </span>
+                          <span className="league-result-team__score">{homeScore}</span>
+                        </div>
+                        <div className="league-result-divider"><span>—</span><span>FT</span></div>
+                        <div className={`league-result-team league-result-team--away ${awayWon ? 'league-result-team--winner' : ''}`}>
+                          <span className="league-result-team__score">{awayScore}</span>
+                          <span className="league-result-team__identity league-result-team__identity--away">
+                            <span title={fixture.away_team_name}>{shortTeamName(fixture.away_team_name)}</span>
+                            {fixture.away_team_crest && <img src={fixture.away_team_crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10" />}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="league-result-row__mobile-score">{homeScore} <span>–</span> {awayScore} <b>FT</b></div>
+                    </article>
+                  )
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       )}
-
-      {matchdays.map((md) => (
-        <div
-          key={md}
-          className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
-        >
-          <div className="bg-slate-800 text-white px-4 py-3 font-semibold text-sm">
-            Matchday {md}
-          </div>
-          <div className="divide-y divide-slate-100">
-            {grouped[md].map((f) => (
-              <div key={f.match_id} className="px-3 py-3 sm:px-4">
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0 justify-start">
-                    {f.home_team_crest && (
-                      <img
-                        src={f.home_team_crest}
-                        alt=""
-                        className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
-                      />
-                    )}
-                    <span
-                      className="text-xs sm:text-sm font-medium text-slate-900 leading-tight"
-                      title={f.home_team_name}
-                    >
-                      {shortTeamName(f.home_team_name)}
-                    </span>
-                  </div>
-                  <div className="font-bold text-slate-900 text-xs sm:text-sm px-1 text-center tabular-nums">
-                    {f.home_score}-{f.away_score}
-                  </div>
-                  <div className="flex items-center gap-1.5 min-w-0 justify-end">
-                    <span
-                      className="text-xs sm:text-sm font-medium text-slate-900 leading-tight text-right"
-                      title={f.away_team_name}
-                    >
-                      {shortTeamName(f.away_team_name)}
-                    </span>
-                    {f.away_team_crest && (
-                      <img
-                        src={f.away_team_crest}
-                        alt=""
-                        className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
-                      />
-                    )}
-                  </div>
-                </div>
-                <p className="text-center text-[11px] text-slate-400 mt-1">
-                  {formatKickoff(f.utc_date)} · FT
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   )
 }

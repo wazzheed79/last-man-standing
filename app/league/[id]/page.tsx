@@ -271,7 +271,15 @@ export default function LeagueOverviewPage() {
     : ''
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
+      <section className="league-page-intro">
+        <div>
+          <p className="league-eyebrow"><span className="league-eyebrow__dot" /> Your competition</p>
+          <h2 className="league-page-title">League overview</h2>
+          <p className="league-page-subtitle">Your status, this week&apos;s pick and the players still in contention.</p>
+        </div>
+        <div className="league-intro-tag"><span className="league-intro-tag__icon">GW</span> Gameweek {comp?.current_gameweek}</div>
+      </section>
       {error && (
         <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">
           {error}
@@ -293,7 +301,7 @@ export default function LeagueOverviewPage() {
       )}
 
       {needsPick && (
-        <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-white p-5 shadow-sm dark:border-amber-700 dark:from-amber-950/60 dark:to-slate-900 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
             <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
               You haven't picked for Gameweek {comp?.current_gameweek}
@@ -312,7 +320,7 @@ export default function LeagueOverviewPage() {
           </div>
           <Link
             href={`/league/${leagueId}/pick`}
-            className="shrink-0 text-center bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+            className="shrink-0 rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-extrabold text-white shadow-lg shadow-blue-950/15 transition hover:bg-blue-700"
           >
             Make pick
           </Link>
@@ -393,18 +401,18 @@ export default function LeagueOverviewPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{aliveCount}</p>
-          <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 uppercase mt-1">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="league-stat-card league-stat-card--leader">
+          <p className="league-stat-card__value">{aliveCount}</p>
+          <p className="league-stat-card__label mt-1">
             Alive
           </p>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-red-600 dark:text-red-300">
+        <div className="league-stat-card league-stat-card--out">
+          <p className="league-stat-card__value">
             {totalPlayers - aliveCount}
           </p>
-          <p className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase mt-1">Out</p>
+          <p className="league-stat-card__label mt-1">Out</p>
         </div>
       </div>
 

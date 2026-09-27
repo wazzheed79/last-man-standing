@@ -282,9 +282,19 @@ export default function LeaguePickPage() {
     : null
 
   return (
-    <div className="space-y-4 pb-28">
+    <div className="space-y-5 pb-32 sm:space-y-6">
+      <section className="league-page-intro">
+        <div>
+          <p className="league-eyebrow"><span className="league-eyebrow__dot" /> Your gameweek decision</p>
+          <h2 className="league-page-title">Make your pick</h2>
+          <p className="league-page-subtitle">Choose one team to back this week. Once used, a team cannot be picked again.</p>
+        </div>
+        <div className="league-intro-tag"><span className="league-intro-tag__icon">GW</span> Gameweek {comp?.current_gameweek}</div>
+      </section>
+
       <div className="flex justify-between items-center px-1">
-        <p className="text-xs text-slate-500">
+        <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
           {lastUpdated
             ? `Scores refresh every 30s - Updated ${lastUpdated.toLocaleTimeString()}`
             : 'Loading scores...'}
@@ -292,15 +302,15 @@ export default function LeaguePickPage() {
         <button
           type="button"
           onClick={() => load(false)}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-slate-800"
         >
           Refresh now
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+      <section className="league-pick-control">
         <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
-          <div className="flex items-center gap-1.5 font-medium text-amber-800 bg-amber-50 dark:bg-amber-900/40 dark:text-amber-200 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-700">
+          <div className="flex items-center gap-1.5 font-bold text-amber-900 bg-amber-50 dark:bg-amber-900/40 dark:text-amber-100 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-700">
             {deadline ? <Countdown deadline={deadline} /> : <span>No deadline yet</span>}
           </div>
           {deadlineLabel && (
@@ -310,22 +320,22 @@ export default function LeaguePickPage() {
 
         <div className="flex items-center justify-between gap-3 pt-0.5">
           <div className="min-w-0">
-            <p className="text-xs text-slate-500">Current pick</p>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Current pick</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-900 dark:text-white truncate">
               {currentPick
                 ? shortTeamName(currentPick.team_name)
-                : 'None yet'}
+                : 'No pick submitted'}
               {currentPick && !locked && (
-                <span className="ml-1.5 text-emerald-600 font-semibold text-xs">saved</span>
+                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 align-middle text-[10px] font-extrabold uppercase tracking-wide text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">Saved</span>
               )}
               {currentPick && locked && (
-                <span className="ml-1.5 text-slate-400 font-semibold text-xs">locked</span>
+                <span className="ml-2 rounded-full bg-slate-200 px-2 py-1 align-middle text-[10px] font-extrabold uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">Locked</span>
               )}
             </p>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-slate-500">Rule</p>
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          <div className="text-right shrink-0 rounded-xl bg-slate-100 px-3 py-2 dark:bg-slate-800">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">Rule</p>
+            <p className="mt-1 text-xs font-extrabold text-slate-800 dark:text-slate-100">
               {comp?.allow_pick_changes === false
                 ? '1 pick - locked after'
                 : '1 pick - no reuse'}
@@ -333,9 +343,9 @@ export default function LeaguePickPage() {
           </div>
         </div>
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        {message && <p className="text-emerald-600 text-sm">{message}</p>}
-      </div>
+        {error && <p role="alert" className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-200">{error}</p>}
+        {message && <p role="status" className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">{message}</p>}
+      </section>
 
       {usedTeams.length > 0 && (
         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-xs">
@@ -356,9 +366,13 @@ export default function LeaguePickPage() {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
-          Gameweek {comp?.current_gameweek} - tap a team
-        </h2>
+        <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+          <div>
+            <p className="league-eyebrow">Pick from this week&apos;s fixtures</p>
+            <h2 className="mt-1 text-lg font-extrabold tracking-tight text-slate-950 dark:text-white">Gameweek {comp?.current_gameweek}</h2>
+          </div>
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Tap a club to select</p>
+        </div>
 
         {fixtures.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-500">
@@ -431,21 +445,21 @@ export default function LeaguePickPage() {
                 }
                 className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all touch-manipulation active:scale-[0.98] min-h-[108px] ${
                   used
-                    ? 'opacity-40 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-200 cursor-not-allowed'
+                    ? 'opacity-45 bg-slate-100 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-700 cursor-not-allowed'
                     : selected
-                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 shadow-sm'
+                    ? 'bg-blue-50 dark:bg-blue-950/45 border-blue-500 shadow-lg shadow-blue-950/10 ring-2 ring-blue-500/15'
                     : isCurrent
-                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300'
-                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-600 hover:border-slate-200'
+                    ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-300 dark:border-sky-700'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md'
                 }`}
               >
                 {selected && (
-                  <span className="absolute top-1.5 right-1.5 text-emerald-600 text-[10px] font-bold">
-                    OK
+                    <span className="absolute right-2 top-2 rounded-full bg-blue-600 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                      Selected
                   </span>
                 )}
                 {used && (
-                  <span className="absolute top-1.5 right-1.5 text-slate-400 text-[10px] font-bold">
+                    <span className="absolute right-2 top-2 rounded-full bg-slate-200 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                     Used
                   </span>
                 )}
@@ -523,11 +537,11 @@ export default function LeaguePickPage() {
         )}
       </section>
 
-      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-lg">
+      <aside className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_36px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950/95 sm:p-4">
         <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
           <div className="min-w-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">
-              {hasUnsavedChanges ? 'Selected pick' : currentPick ? 'Locked in' : 'Select a team'}
+              {hasUnsavedChanges ? 'Selected pick' : currentPick ? 'Locked in' : 'Select a club above'}
             </span>
             <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight truncate">
               {selectedTeam
@@ -544,8 +558,8 @@ export default function LeaguePickPage() {
             onClick={handlePick}
             className={`shrink-0 px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-sm ${
               hasUnsavedChanges && !submitting
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                ? 'bg-blue-600 text-white shadow-blue-900/20 hover:bg-blue-700 active:scale-95'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed'
             }`}
           >
             {submitting
