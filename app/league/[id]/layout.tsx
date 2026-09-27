@@ -38,14 +38,16 @@ export default function LeagueLayout({ children }: { children: React.ReactNode }
   }, [leagueId])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+    <div className="league-app-shell min-h-screen">
       <LeagueNav
         leagueId={leagueId}
         name={meta?.name}
         gameweek={meta?.current_gameweek}
         status={meta?.status}
       />
-      <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
+      <main className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-5 sm:py-7 lg:px-8">
+        {children}
+      </main>
     </div>
   )
 }

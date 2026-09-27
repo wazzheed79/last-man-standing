@@ -79,7 +79,8 @@ export default function LeagueFixturesPage() {
         : 'vs'
 
     return (
-      <div key={f.match_id} className="px-3 py-3 sm:px-4">
+      <article key={f.match_id} className="league-fixture-row">
+        <p className="league-fixture-row__kickoff">{formatKickoff(f.utc_date)}</p>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
           <div className="flex items-center gap-1.5 min-w-0 justify-start">
             <TeamCrest
@@ -87,20 +88,20 @@ export default function LeagueFixturesPage() {
               className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
             />
             <span
-              className="text-xs sm:text-sm font-medium text-slate-900 leading-tight"
+              className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight"
               title={f.home_team_name}
             >
               {home}
             </span>
           </div>
 
-          <div className="text-xs sm:text-sm font-bold text-slate-800 px-1 text-center tabular-nums">
+          <div className={`league-fixture-score ${f.status === 'IN_PLAY' || f.status === 'LIVE' || f.status === 'PAUSED' ? 'league-fixture-score--live' : ''}`}>
             {score}
           </div>
 
           <div className="flex items-center gap-1.5 min-w-0 justify-end">
             <span
-              className="text-xs sm:text-sm font-medium text-slate-900 leading-tight text-right"
+              className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight text-right"
               title={f.away_team_name}
             >
               {away}
@@ -112,42 +113,57 @@ export default function LeagueFixturesPage() {
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-500 mt-1.5">
-          {formatKickoff(f.utc_date)}
+        <p className={`league-fixture-status ${f.status === 'IN_PLAY' || f.status === 'LIVE' || f.status === 'PAUSED' ? 'league-fixture-status--live' : ''}`}>
           {f.status === 'TIMED' || f.status === 'SCHEDULED'
-            ? ' · Kick-off'
+            ? 'Kick-off scheduled'
             : f.status === 'IN_PLAY' || f.status === 'LIVE' || f.status === 'PAUSED'
-            ? ' · Live'
+            ? 'Live now'
             : f.status === 'FINISHED' || f.status === 'FT'
-            ? ' · Full time'
-            : ''}
+            ? 'Full time'
+            : 'Fixture'}
         </p>
-      </div>
+      </article>
     )
   }
 
   if (loading) return <p className="text-slate-500 text-center">Loading fixtures...</p>
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 font-semibold text-slate-800">
-          This week · GW {gameweek}
+    <div className="space-y-5 sm:space-y-6">
+      <section className="league-page-intro">
+        <div>
+          <p className="league-eyebrow"><span className="league-eyebrow__dot" /> Match centre</p>
+          <h2 className="league-page-title">Fixtures</h2>
+          <p className="league-page-subtitle">Kick-off times, match status and the next round at a glance.</p>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="league-intro-tag"><span className="league-intro-tag__icon">GW</span> Gameweek {gameweek}</div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="league-stat-card"><span className="league-stat-card__label">This gameweek</span><span className="league-stat-card__value">{thisWeek.length}</span><span className="league-stat-card__detail">fixtures · GW {gameweek}</span></div>
+        <div className="league-stat-card league-stat-card--leader"><span className="league-stat-card__label">Coming up next</span><span className="league-stat-card__value">{nextWeek.length}</span><span className="league-stat-card__detail">fixtures · GW {gameweek + 1}</span></div>
+      </div>
+
+      <section className="league-fixture-section">
+        <div className="league-matchday-heading">
+          <div><p className="league-matchday-heading__eyebrow">Current round</p><h3>This week <span>· GW {gameweek}</span></h3></div>
+          <span className="league-matchday-heading__count">{thisWeek.length} fixtures</span>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {thisWeek.length ? (
             thisWeek.map(row)
           ) : (
             <p className="p-4 text-sm text-slate-500">No fixtures loaded.</p>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 font-semibold text-slate-800">
-          Next week · GW {gameweek + 1}
+      <section className="league-fixture-section">
+        <div className="league-matchday-heading">
+          <div><p className="league-matchday-heading__eyebrow">Upcoming round</p><h3>Next week <span>· GW {gameweek + 1}</span></h3></div>
+          <span className="league-matchday-heading__count">{nextWeek.length} fixtures</span>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {nextWeek.length ? (
             nextWeek.map(row)
           ) : (
@@ -157,7 +173,7 @@ export default function LeagueFixturesPage() {
             </p>
           )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }

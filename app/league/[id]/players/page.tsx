@@ -136,19 +136,37 @@ export default function LeaguePlayersPage() {
   if (loading) return <p className="text-slate-500 dark:text-slate-400 text-center">Loading players...</p>
   if (error) return <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">{error}</div>
 
+  const aliveCount = players.filter((player) => player.status === 'alive').length
+
   return (
-    <div className="max-w-2xl mx-auto space-y-3">
+    <div className="space-y-5 sm:space-y-6">
+      <section className="league-page-intro">
+        <div>
+          <p className="league-eyebrow"><span className="league-eyebrow__dot" /> League line-up</p>
+          <h2 className="league-page-title">Players &amp; picks</h2>
+          <p className="league-page-subtitle">See who is still in, follow each player&apos;s route, and compare team choices.</p>
+        </div>
+        <div className="league-intro-tag"><span className="league-intro-tag__icon">{aliveCount}</span> Still alive</div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Player summary">
+        <div className="league-stat-card"><span className="league-stat-card__label">Players</span><span className="league-stat-card__value">{players.length}</span><span className="league-stat-card__detail">in this league</span></div>
+        <div className="league-stat-card league-stat-card--leader"><span className="league-stat-card__label">Still alive</span><span className="league-stat-card__value">{aliveCount}</span><span className="league-stat-card__detail">can pick this week</span></div>
+        <div className="league-stat-card"><span className="league-stat-card__label">Picks recorded</span><span className="league-stat-card__value">{picks.length}</span><span className="league-stat-card__detail">across all gameweeks</span></div>
+      </section>
+
       {picksHidden && (
         <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
           Other players&apos; picks are hidden until the first kick-off of this gameweek. You can still see your own.
         </p>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 flex items-center gap-3">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm shrink-0">Pick popularity</h2>
+      <section className="league-table-card overflow-hidden">
+        <div className="league-card-heading flex-wrap">
+          <div><p className="league-card-heading__eyebrow">Team trends</p><h3>Pick popularity</h3></div>
           <select
-            className="ml-auto border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm"
+            aria-label="Choose gameweek for pick popularity"
+            className="ml-auto border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm font-semibold"
             value={popularityGw ?? ''}
             onChange={(e) => setPopularityGw(Number(e.target.value))}
           >
@@ -179,7 +197,7 @@ export default function LeaguePlayersPage() {
                 </div>
                 <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-sky-400 to-blue-600 rounded-full"
                     style={{ width: `${Math.max(4, (c.count / maxPopularity) * 100)}%` }}
                   />
                 </div>
@@ -187,9 +205,13 @@ export default function LeaguePlayersPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700">
+      <section className="league-table-card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+      <div className="league-card-heading">
+        <div><p className="league-card-heading__eyebrow">The competition</p><h3>Player picks</h3></div>
+        <span className="league-card-heading__count">{players.length} players</span>
+      </div>
       {players.length === 0 && (
         <p className="p-5 text-slate-500 text-sm">No players in this league yet.</p>
       )}
@@ -200,15 +222,15 @@ export default function LeaguePlayersPage() {
         const isWinner = winnerId === player.id
 
         return (
-          <div key={player.id} className="p-4">
+          <div key={player.id} className="p-4 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/60 sm:p-5">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm shrink-0">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${isAlive ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                 {player.display_name?.charAt(0)?.toUpperCase() || '?'}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h2 className="font-semibold text-slate-900 truncate">
+                  <h2 className="font-extrabold text-slate-900 dark:text-white truncate">
                     {player.display_name}
                   </h2>
                   {isWinner && (
@@ -235,7 +257,7 @@ export default function LeaguePlayersPage() {
                     {playerPicks.map((pick) => (
                       <div
                         key={pick.id}
-                        className="flex flex-col items-center min-w-[52px]"
+                      className="flex min-w-[64px] flex-col items-center rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/70"
                         title={`GW${pick.gameweek}: ${pick.team_name}`}
                       >
                         <TeamCrest
@@ -270,7 +292,7 @@ export default function LeaguePlayersPage() {
           </div>
         )
       })}
-      </div>
+      </section>
     </div>
   )
 }
