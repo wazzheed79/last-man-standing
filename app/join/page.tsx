@@ -10,6 +10,7 @@ function JoinCompetitionForm() {
   const [displayName, setDisplayName] = useState('')
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [joinedId, setJoinedId] = useState('')
@@ -20,6 +21,27 @@ function JoinCompetitionForm() {
     const code = searchParams.get('code')
     if (code) setJoinCode(code.toUpperCase())
   }, [searchParams])
+
+  // Guests must sign in first; keep the join link for after auth
+  useEffect(() => {
+    const run = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        const code = searchParams.get('code') || joinCode
+        const next = code
+          ? `/join?code=${encodeURIComponent(code.toUpperCase())}`
+          : '/join'
+        router.replace(
+          `/login?next=${encodeURIComponent(next)}&mode=signup`
+        )
+        return
+      }
+      setCheckingAuth(false)
+    }
+    run()
+  }, [router, searchParams, supabase.auth, joinCode])
 
   const finishJoin = async (code: string, data: any) => {
     let competitionId =
@@ -65,14 +87,12 @@ function JoinCompetitionForm() {
 
       const code = joinCode.trim().toUpperCase()
 
-      // Trusted path — enforces open/active, membership, etc. server-side
       const { data, error: rpcError } = await supabase.rpc('join_competition', {
         p_join_code: code,
         p_display_name: displayName.trim() || null,
       })
 
       if (rpcError) {
-        // Fallback if function was defined without p_ prefix
         if (
           rpcError.message?.includes('Could not find') ||
           rpcError.message?.includes('schema cache') ||
@@ -98,6 +118,14 @@ function JoinCompetitionForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
+        <p className="text-slate-500">Checking login...</p>
+      </div>
+    )
   }
 
   return (
@@ -164,6 +192,7 @@ function JoinCompetitionForm() {
         </form>
 
         <button
+          type="button"
           onClick={() => router.push('/')}
           className="w-full mt-4 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-200 py-2 rounded hover:bg-gray-300 dark:hover:bg-slate-600"
         >
