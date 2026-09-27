@@ -260,4 +260,3 @@ export default function LeagueTablePage() {
     </div>
   )
 }
-

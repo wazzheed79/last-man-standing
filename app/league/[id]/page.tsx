@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 5611)
-Total output lines: 587
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -293,7 +290,63 @@ export default function LeagueOverviewPage() {
         </div>
         <div className="league-intro-tag"><span className="league-intro-tag__icon">GW</span> Gameweek {comp?.current_gameweek}</div>
       </section>
-   …611 tokens truncated… </span>
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      {notifMsg && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-sm">
+          {notifMsg}
+        </div>
+      )}
+
+      {comp && players.length > 0 && (
+        <LeagueCycleHistory
+          players={players}
+          picks={allPicks}
+          cycleNumber={Number(comp.cycle_number ?? 1)}
+          winnerPlayerId={comp.winner_player_id ?? null}
+        />
+      )}
+
+      {needsPick && (
+        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-white p-5 shadow-sm dark:border-amber-700 dark:from-amber-950/60 dark:to-slate-900 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
+              You haven't picked for Gameweek {comp?.current_gameweek}
+            </p>
+            <p className="text-xs text-amber-800 dark:text-amber-200/80 mt-0.5">
+              {deadline
+                ? `Deadline: ${deadline.toLocaleString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}`
+                : 'Pick before the first kick-off'}
+            </p>
+          </div>
+          <Link
+            href={`/league/${leagueId}/pick`}
+            className="shrink-0 rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-extrabold text-white shadow-lg shadow-blue-950/15 transition hover:bg-blue-700"
+          >
+            Make pick
+          </Link>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColour}`}
+          >
+            {comp?.status}
+          </span>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+            Gameweek {comp?.current_gameweek}
+          </span>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300">
             {aliveCount} / {totalPlayers} alive
           </span>
@@ -531,4 +584,3 @@ export default function LeagueOverviewPage() {
     </div>
   )
 }
-
