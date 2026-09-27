@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -61,13 +62,22 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-lg mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              Last Man Standing
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Premier League 2026/27
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/last-man-standing-crest.jpg"
+              alt=""
+              width={52}
+              height={52}
+              className="h-10 w-10 shrink-0 rounded-xl border border-amber-200 bg-white object-cover shadow-sm sm:h-12 sm:w-12"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white sm:text-xl">
+                Last Man Standing
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Premier League 2026/27
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -82,17 +92,6 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8">
-        <div className="mb-6 flex justify-center">
-          <div className="badge-3d-container">
-            <div className="badge-3d-wrapper">
-              <img
-                src="/last-man-standing-badge.svg"
-                alt="Last Man Standing"
-              />
-            </div>
-          </div>
-        </div>
-
         <div className="mb-8">
           <p className="text-sm text-slate-500 dark:text-slate-400">Signed in as</p>
           <p className="font-medium text-slate-800 dark:text-slate-100 truncate">

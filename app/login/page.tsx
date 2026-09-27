@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -51,6 +52,16 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg border border-transparent dark:border-slate-700">
+          <div className="mb-4 flex justify-center">
+            <Image
+              src="/last-man-standing-crest.jpg"
+              alt="Last Man Standing Competition badge"
+              width={144}
+              height={144}
+              priority
+              className="h-36 w-36 rounded-2xl border border-amber-200 bg-white object-cover shadow-sm"
+            />
+          </div>
           <h1 className="text-2xl font-bold mb-4 text-center text-slate-900 dark:text-white">
             {isSignUp ? 'Create Account' : 'Login'}
           </h1>
