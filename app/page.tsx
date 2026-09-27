@@ -64,11 +64,11 @@ export default function HomePage() {
         <div className="max-w-lg mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex min-w-0 items-center gap-3">
             <Image
-              src="/last-man-standing-crest.jpg"
+              src="/last-man-standing-emblem.jpg"
               alt=""
-              width={52}
-              height={52}
-              className="h-10 w-10 shrink-0 rounded-xl border border-amber-200 bg-white object-cover shadow-sm sm:h-12 sm:w-12"
+              width={237}
+              height={155}
+              className="h-[42px] w-16 shrink-0 rounded-xl border border-amber-200 bg-white object-cover shadow-sm"
             />
             <div className="min-w-0">
               <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white sm:text-xl">
