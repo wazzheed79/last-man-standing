@@ -156,8 +156,15 @@ html.dark .league-card-heading__count, html.dark .league-matchday-heading__count
 .league-table tbody .league-table__rank-cell { padding-left: 1rem; }
 .league-table__club-cell { overflow: hidden; padding-right: .25rem !important; padding-left: .25rem !important; text-align: left !important; color: #19304b; font-size: .96rem !important; }
 .league-table__played-cell { color: #65788e; }
-.league-table__club-toggle { display: flex; width: 100%; min-width: 0; align-items: center; gap: .65rem; padding: .1rem .25rem; color: inherit; text-align: left; }
+.league-table__club-toggle { position: relative; display: flex; width: 100%; min-width: 0; align-items: center; gap: .65rem; padding: .1rem .25rem; color: inherit; text-align: left; }
 .league-table__club-toggle:focus-visible { outline: 2px solid #168af2; outline-offset: 3px; border-radius: .5rem; }
+.league-form-preview { position: fixed; z-index: 80; width: min(20rem, calc(100vw - 1.5rem)); pointer-events: none; border: 1px solid #203a58; border-radius: .8rem; background: #0b1e35; padding: .75rem .85rem; color: #eff6ff; box-shadow: 0 14px 36px rgba(5,20,39,.3); }
+.league-form-preview__heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; border-bottom: 1px solid #29435e; padding-bottom: .45rem; }
+.league-form-preview__heading strong { overflow: hidden; color: #fff; font-size: .78rem; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.league-form-preview__heading > span { flex: 0 0 auto; color: #9bb0c9; font-size: .59rem; font-weight: 750; }
+.league-form-preview ol { display: grid; gap: .35rem; margin-top: .55rem; }
+.league-form-preview li { display: flex; align-items: center; gap: .55rem; color: #d3deeb; font-size: .67rem; font-weight: 700; }
+.league-form-preview .league-form-dot { width: 1.4rem; height: 1.4rem; flex: 0 0 auto; font-size: .57rem; }
 .league-table__chevron { flex: 0 0 auto; color: #8192a6; font-size: 1.15rem; line-height: 1; transition: transform .18s; }
 .league-table__chevron--open { transform: rotate(180deg); color: #075bb5; }
 .league-table__row--leader { background: #f1f7ff; }
