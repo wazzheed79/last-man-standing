@@ -1,75 +1,89 @@
- Last Man Standing — Project Status
+# Last Man Standing — AI hand-off brief
 
-Last verified against the live Supabase project (`cwebvgnuicfmybjubtwx`) and
-the GitHub frontend on **2026-09-23**. This doc is a handover for whichever
-AI/session picks this project up next — read it before changing anything,
-and update it after you make changes.
+**Paste this file (or link the repo + “read PROJECT_STATUS.md”) at the start of any new AI chat.**
+Update this doc after meaningful changes.
+
+---
+
+## Identity
+
+| Item | Value |
+|------|--------|
+| **App** | Premier League Last Man Standing (pick 1 team/week; win advances, draw/loss out; no team reuse) |
+| **Repo** | `https://github.com/wazzheed79/last-man-standing` (private) |
+| **Live** | `https://last-man-standing-wazzheed79.vercel.app` |
+| **Owner** | GitHub `wazzheed79` |
+| **Branch** | `main` → auto-deploy on Vercel |
 
 ## Stack
-- Next.js (App Router, Turbopack), no `src/` dir — `app/` and `components/`
-  sit directly under the project root.
-- Supabase: Postgres + Auth + Edge Functions + pg_cron/pg_net for scheduling.
-- Data source: football-data.org API (Premier League, `season=2026`,
-  competition id `2021`).
-- Frontend is on GitHub: `github.com/wazzheed79/last-man-standing`.
-  Deployed via Vercel (auto-deploy from `main`).
 
-## Resolved Gaps
-1. **Frontend pick flow is RPC-backed:**
-   `app/league/[id]/pick/page.tsx` calls `supabase.rpc('make_pick', {...})`
-   and surfaces `error.message`.
-2. **`create_competition` overload dropped:**
-   Dropped the 2-argument overload via migration `20260922110000_drop_create_competition_2arg.sql`.
-3. **Edge Function secrets standardized:**
-   Edge Functions tracked in Git (`supabase/functions/`). `fetch-fixtures` and
-   `live-scores` both accept `FOOTBALL_DATA_API_KEY` (with token fallback).
-4. **Total Wipeout Rollover mechanic implemented:**
-   Migration `20260923120000_wipeout_rollover.sql` applied. Multi-cycle support
-   tracks resets in `competitions.cycle_number` and `picks.cycle_number`. All
-   original players are revived and teams unlocked per cycle.
+- **Next.js 16** App Router (no `src/`), React 19, Tailwind 4, Turbopack  
+- **Supabase**: Auth, Postgres, RLS, `SECURITY DEFINER` RPCs, Edge Functions, pg_cron  
+- **API**: football-data.org (PL competition `2021`, season `2026`)  
+- **Clients**: `@supabase/ssr` browser + server helpers under `utils/supabase/`
 
-## Known gaps / things worth fixing next
-1. **No email/push reminders before a pick deadline:**
-   Needs a scheduled job checking `get_gameweek_deadline()` against an email
-   provider (Resend/Postmark) — nothing wired up yet.
-2. **Smart cron scheduling / rate-limit protection:**
-   `pg_cron` calls `live-scores` every 2 minutes. Consider pausing execution
-   outside active match windows to preserve football-data.org quota.
+## Core product rules
 
-## Database schema (`public` schema)
+1. One pick per player per gameweek; team cannot be reused in the same **cycle**.  
+2. **`make_pick(p_competition_id, p_team_id, p_team_name)`** is the only trusted write path for picks — enforces alive status, deadline, `allow_pick_changes`, team not already used.  
+3. **`hide_picks_until_ko`**: other players’ **team names** hidden until first KO of current GW; show “Picked / Hidden until KO”, not “No picks yet”. Own pick always visible.  
+4. **Wipeout**: if nobody survives a GW, `handle_wipeout_rollover` starts a new cycle (teams unlock, players revive).  
+5. **No max player limit** on join.  
+6. Trial: **email confirmation may be OFF** so testers sign up without SMTP; invite flow preserves `?next=/join?code=…` via `/auth/callback`.
 
-### Tables
-- **`competitions`** — `id, name, join_code, created_by, current_gameweek,
-  status ('open'|'active'|'finished'|'archived'), season, pick_deadline_type,
-  created_at, updated_at, winner_player_id, finished_at, description,
-  allow_pick_changes, hide_picks_until_ko, cycle_number (integer, default 1)`
-- **`competition_players`** — `id, competition_id, user_id, display_name,
-  status ('alive'|'eliminated'), eliminated_gameweek, joined_at`
-- **`picks`** — `id, competition_id, player_id, gameweek, team_id, team_name,
-  result ('win'|'draw'|'loss'), created_at, status ('pending'|'win'|'draw'|
-  'loss'|'postponed'), deadline_exempt (bool), cycle_number (integer, default 1)`.
-  Unique constraints: `(competition_id, player_id, gameweek, cycle_number)` and
-  `(competition_id, player_id, team_id, cycle_number)`.
-- **`fixtures_cache`** — global cache of PL fixtures: `id, season, matchday,
-  match_id, utc_date, status, home_team_id, home_team_name, away_team_id,
-  away_team_name, home_score, away_score, updated_at, home_team_crest,
-  away_team_crest, is_manual`.
-- **`app_admins`** — `user_id` only. RLS-locked.
+## Main routes
 
-### Key functions (`SECURITY DEFINER`, `search_path = public`)
-- **`make_pick(competition_id, team_id, team_name)`** — trusted path for picks;
-  enforces deadlines, player status, and cycle-specific team lockouts.
-- **`handle_wipeout_rollover(competition_id, next_gameweek)`** — revives all
-  original entrants, increments `cycle_number`, and advances `current_gameweek`.
-- **`process_gameweek_results(competition_id, gameweek?)`** — grades picks,
-  eliminates losers, and auto-invokes `handle_wipeout_rollover` when 0 players remain.
-- **`create_competition(...)`** — single full overload.
-- **`join_competition(join_code, display_name?)`**
-- **`advance_gameweek_internal(competition_id)`**
-- **`get_gameweek_deadline(competition_id, gameweek?)`**
-- **`run_last_man_standing_automation()`** — orchestrator for all competitions.
+| Path | Purpose |
+|------|--------|
+| `/login` | Login + sign up; supports `?next=` and `?mode=signup` |
+| `/auth/callback` | Email/code exchange → redirect to `next` |
+| `/join?code=` | Join league (guests redirected to login with code preserved) |
+| `/create` | Create competition (start GW, allow changes, hide until KO) |
+| `/league/[id]` | Overview (status, join QR, creator pick counts — **no cycle-history matrix**) |
+| `/league/[id]/pick` | Make/change pick + form dots |
+| `/league/[id]/players` | Line-up, pick history rows, popularity (defaults to **current** GW only) |
+| `/league/[id]/table` | PL standings (compact; no clubs/matches/leader summary cards) |
+| `/league/[id]/fixtures` | Fixtures |
+| `/competitions` | My leagues |
 
-## Automation (pg_cron + pg_net) — LIVE
-- `last-man-standing-fetch-fixtures` (every 5 min)
-- `last-man-standing-live-scores` (every 2 min)
-- `last-man-standing-automation` (every 5 min, offset by 2)
+## Key DB objects
+
+**Tables:** `competitions`, `competition_players`, `picks`, `fixtures_cache`, `app_admins`  
+
+**Important columns:**  
+`competitions.allow_pick_changes`, `hide_picks_until_ko`, `cycle_number`, `current_gameweek`, `status`  
+`picks.cycle_number`, `status`, `result`, `deadline_exempt`  
+
+**RPCs:** `make_pick`, `join_competition`, `create_competition`, `process_gameweek_results`, `handle_wipeout_rollover`, `get_gameweek_deadline`, automation runner  
+
+**Edge functions:** `fetch-fixtures`, `live-scores`, `get-standings` (secrets: prefer `FOOTBALL_DATA_API_KEY`, fallbacks ok)
+
+## Do not break
+
+- RPC arg names use **`p_` prefix** on the client (`p_competition_id`, etc.).  
+- Don’t re-add Overview **cycle history** unless asked (Players tab covers history).  
+- Don’t show other players’ team names before KO when `hide_picks_until_ko` is on.  
+- Don’t commit large binaries / zips (GitHub 100MB limit).  
+- Prefer small commits on `main`; Vercel deploys automatically.
+
+## Known gaps (optional later)
+
+- Email deadline reminders (needs Resend/Postmark + confirm-email SMTP for public signups)  
+- Optional `max_players` on create  
+- Smarter live-scores cron only during match windows  
+- PWA icons are SVG-based (fine for many devices)
+
+## How to work in a new chat
+
+```
+Repo: https://github.com/wazzheed79/last-man-standing (private, owner wazzheed79)
+Read PROJECT_STATUS.md, then: [ONE concrete task].
+Push to main when done. Do not rewrite unrelated pages.
+```
+
+**Owner workflow:** after each AI session, update the “Last updated” line and any new gaps above.
+
+---
+
+**Last updated:** 2026-09-28  
+**Recent UI:** removed Overview cycle history; Players show “Picked · Hidden until KO”; popularity GW = current only; table summary cards removed; invite/auth callback flow live.
