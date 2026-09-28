@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import LeagueCycleHistory from '@/components/league/LeagueCycleHistory'
 
 export default function LeagueOverviewPage() {
   const params = useParams()
@@ -280,8 +279,8 @@ export default function LeagueOverviewPage() {
     comp?.status === 'active' || comp?.status === 'open'
       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
       : comp?.status === 'finished'
-      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-      : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+        : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
 
   const alive = players.filter((p) => p.status === 'alive')
   const out = players
@@ -331,19 +330,6 @@ export default function LeagueOverviewPage() {
         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-lg text-sm">
           {notifMsg}
         </div>
-      )}
-
-      {comp && players.length > 0 && (
-        <LeagueCycleHistory
-          players={players}
-          picks={allPicks}
-          cycleNumber={Number(comp.cycle_number ?? 1)}
-          winnerPlayerId={comp.winner_player_id ?? null}
-          hidePicksUntilKo={!!comp.hide_picks_until_ko}
-          currentGameweek={comp.current_gameweek}
-          firstKickoff={deadline}
-          viewerPlayerId={me?.id ?? null}
-        />
       )}
 
       {needsPick && (
@@ -488,7 +474,8 @@ export default function LeagueOverviewPage() {
               )}
               {me.status === 'eliminated' && (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-600 text-white">
-                  Out{me.eliminated_gameweek ? ` · GW${me.eliminated_gameweek}` : ''}
+                  Out
+                  {me.eliminated_gameweek ? ` · GW${me.eliminated_gameweek}` : ''}
                 </span>
               )}
               {winner?.id === me.id && (
@@ -571,8 +558,8 @@ export default function LeagueOverviewPage() {
             </div>
           </div>
           <p className="text-[10px] text-slate-400 mt-3">
-            Team names stay hidden here if "hide picks until KO" is on —
-            only pick status is shown.
+            Team names stay hidden if "hide picks until KO" is on — only
+            pick status is shown.
           </p>
         </div>
       )}
