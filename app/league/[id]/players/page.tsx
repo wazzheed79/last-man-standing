@@ -60,7 +60,6 @@ export default function LeaguePlayersPage() {
       const gw = Number(comp?.current_gameweek) || 1
       setWinnerId(comp?.winner_player_id || null)
       setCurrentGameweek(gw)
-      // Always open on the league's current gameweek (not GW1)
       setPopularityGw(gw)
 
       let hidden = false
@@ -103,12 +102,17 @@ export default function LeaguePlayersPage() {
     }
   }
 
-  const getPlayerPicks = (playerId: string) => {
+  /** Team names for others' current GW stay private until KO; past weeks still show. */
+  const getVisiblePlayerPicks = (playerId: string) => {
     const list = picks.filter((p) => p.player_id === playerId)
-    if (!picksHidden) return list
-    if (playerId === myPlayerId) return list
-    return []
+    if (!picksHidden || playerId === myPlayerId) return list
+    return list.filter((p) => p.gameweek !== currentGameweek)
   }
+
+  const hasCurrentGwPick = (playerId: string) =>
+    picks.some(
+      (p) => p.player_id === playerId && p.gameweek === currentGameweek
+    )
 
   const shortName = (name: string) =>
     (name || '')
@@ -117,8 +121,6 @@ export default function LeaguePlayersPage() {
       .replace(' and Hove Albion', '')
       .trim()
 
-  // Only gameweeks this league has used (plus current). Avoids GW1..GW5 when
-  // the competition started mid-season at e.g. GW6.
   const popularityOptions = useMemo(() => {
     const set = new Set<number>()
     for (const p of picks) {
@@ -129,7 +131,6 @@ export default function LeaguePlayersPage() {
     return list.length ? list : [currentGameweek || 1]
   }, [picks, currentGameweek])
 
-  // Keep selection valid if options change
   useEffect(() => {
     if (popularityGw == null) return
     if (!popularityOptions.includes(popularityGw)) {
@@ -221,8 +222,9 @@ export default function LeaguePlayersPage() {
 
       {picksHidden && (
         <p className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-          Other players' picks are hidden until the first kick-off of this
-          gameweek. You can still see your own.
+          Other players' <strong>team names</strong> are hidden until the
+          first kick-off. You can still see who has already picked (and your own
+          team).
         </p>
       )}
 
@@ -300,9 +302,14 @@ export default function LeaguePlayersPage() {
         )}
 
         {players.map((player) => {
-          const playerPicks = getPlayerPicks(player.id)
+          const visiblePicks = getVisiblePlayerPicks(player.id)
           const isAlive = player.status === 'alive'
           const isWinner = winnerId === player.id
+          const isMe = player.id === myPlayerId
+          const currentPickLocked =
+            picksHidden && !isMe && hasCurrentGwPick(player.id)
+          const noPicksAtAll =
+            visiblePicks.length === 0 && !currentPickLocked && !hasCurrentGwPick(player.id)
 
           return (
             <div
@@ -345,11 +352,11 @@ export default function LeaguePlayersPage() {
                     )}
                   </div>
 
-                  {playerPicks.length === 0 ? (
+                  {noPicksAtAll ? (
                     <p className="text-sm text-slate-400">No picks yet</p>
                   ) : (
-                    <div className="flex gap-3 overflow-x-auto pb-1">
-                      {playerPicks.map((pick) => (
+                    <div className="flex gap-3 overflow-x-auto pb-1 items-stretch">
+                      {visiblePicks.map((pick) => (
                         <div
                           key={pick.id}
                           className="flex min-w-[64px] flex-col items-center rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/70"
@@ -359,7 +366,7 @@ export default function LeaguePlayersPage() {
                             src={crestMap[pick.team_id]}
                             className="w-7 h-7 object-contain mb-1 rounded"
                           />
-                          <div className="text-[10px] font-semibold text-slate-700 text-center leading-tight">
+                          <div className="text-[10px] font-semibold text-slate-700 dark:text-slate-200 text-center leading-tight">
                             {shortName(pick.team_name)}
                           </div>
                           <div className="text-[9px] text-slate-400 mt-0.5">
@@ -384,6 +391,38 @@ export default function LeaguePlayersPage() {
                           )}
                         </div>
                       ))}
+
+                      {/* Current week: team hidden, but show that they have picked */}
+                      {currentPickLocked && (
+                        <div
+                          className="flex min-w-[88px] flex-col items-center justify-center rounded-xl border border-dashed border-amber-300 bg-amber-50 px-2 py-2 dark:border-amber-700 dark:bg-amber-900/30"
+                          title="Team hidden until first kick-off"
+                        >
+                          <span className="text-lg leading-none" aria-hidden>
+                            🔒
+                          </span>
+                          <div className="text-[10px] font-semibold text-amber-900 dark:text-amber-200 text-center leading-tight mt-1">
+                            Picked
+                          </div>
+                          <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                            GW{currentGameweek}
+                          </div>
+                          <div className="text-[9px] text-amber-600 dark:text-amber-400 mt-0.5">
+                            Hidden until KO
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alive, no current pick, privacy on */}
+                      {picksHidden &&
+                        !isMe &&
+                        isAlive &&
+                        !hasCurrentGwPick(player.id) &&
+                        visiblePicks.length === 0 && (
+                          <p className="text-sm text-amber-700 dark:text-amber-400 self-center">
+                            No pick yet for GW{currentGameweek}
+                          </p>
+                        )}
                     </div>
                   )}
                 </div>
