@@ -1,0 +1,35 @@
+/*
+ * Legacy 3D badge reset.
+ *
+ * The old spinning/trophy badge is intentionally disabled. We keep the
+ * selectors as a compatibility layer so any stale markup renders as the
+ * normal flat badge instead of the old yellow spinning circle.
+ */
+.badge-3d-container {
+  perspective: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.badge-3d-wrapper {
+  transform: none !important;
+  transform-style: flat !important;
+  animation: none !important;
+  transition: none !important;
+  box-shadow: none !important;
+}
+
+.badge-3d-wrapper::before,
+.badge-3d-wrapper::after {
+  display: none !important;
+  content: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+.badge-3d-wrapper img {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+}
