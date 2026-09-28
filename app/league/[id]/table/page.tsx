@@ -88,8 +88,12 @@ export default function LeagueTablePage() {
       const teamScore = Number(isHome ? match.home_score : match.away_score)
       const opponentScore = Number(isHome ? match.away_score : match.home_score)
       const opponent = isHome ? match.away_team_name : match.home_team_name
-      const result: FormResult['result'] = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D'
-      return { result, label: `${result} ${teamScore}-${opponentScore} vs ${clean(opponent)}` }
+      const result: FormResult['result'] =
+        teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D'
+      return {
+        result,
+        label: `${result} ${teamScore}-${opponentScore} vs ${clean(opponent)}`,
+      }
     })
   }
 
@@ -106,7 +110,14 @@ export default function LeagueTablePage() {
   }
 
   if (error) {
-    return <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200">{error}</div>
+    return (
+      <div
+        role="alert"
+        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-200"
+      >
+        {error}
+      </div>
+    )
   }
 
   if (!standings.length) {
@@ -119,39 +130,21 @@ export default function LeagueTablePage() {
     )
   }
 
-  const leader = standings[0]
-  const leaderTeam = leader.team || leader
-  const leaderName = leaderTeam.shortName || clean(leaderTeam.name || '')
-  const totalGoals = standings.reduce((sum, row) => sum + stat(row, 'goalsFor', 'gf'), 0)
-  const totalPlayed = standings.reduce((sum, row) => sum + stat(row, 'playedGames', 'played'), 0)
-  const matchCount = Math.round(totalPlayed / 2)
-
   return (
     <div className="space-y-5 sm:space-y-6">
       <section className="league-page-intro">
         <div>
-          <p className="league-eyebrow"><span className="league-eyebrow__dot" /> Season standings</p>
+          <p className="league-eyebrow">
+            <span className="league-eyebrow__dot" /> Season standings
+          </p>
           <h2 className="league-page-title">League table</h2>
-          <p className="league-page-subtitle">The full picture, from points and goal difference to each club&apos;s recent form.</p>
+          <p className="league-page-subtitle">
+            Points, goal difference, and each club's recent form — tap a club
+            for details.
+          </p>
         </div>
-        <div className="league-intro-tag"><span className="league-intro-tag__icon">PL</span> Premier League</div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Standings summary">
-        <div className="league-stat-card">
-          <span className="league-stat-card__label">Clubs</span>
-          <span className="league-stat-card__value">{standings.length}</span>
-          <span className="league-stat-card__detail">in the table</span>
-        </div>
-        <div className="league-stat-card">
-          <span className="league-stat-card__label">Matches played</span>
-          <span className="league-stat-card__value">{matchCount.toLocaleString()}</span>
-          <span className="league-stat-card__detail">across all clubs</span>
-        </div>
-        <div className="league-stat-card league-stat-card--leader">
-          <span className="league-stat-card__label">Current leader</span>
-          <span className="league-stat-card__value league-stat-card__value--team">{leaderName}</span>
-          <span className="league-stat-card__detail">{stat(leader, 'points', 'pts')} points · {totalGoals} goals scored</span>
+        <div className="league-intro-tag">
+          <span className="league-intro-tag__icon">PL</span> Premier League
         </div>
       </section>
 
@@ -165,7 +158,10 @@ export default function LeagueTablePage() {
         </div>
 
         <div className="w-full">
-          <table className="league-table w-full table-fixed border-collapse text-sm" aria-label="Premier League standings">
+          <table
+            className="league-table w-full table-fixed border-collapse text-sm"
+            aria-label="Premier League standings"
+          >
             <thead>
               <tr>
                 <th className="league-table__rank">Pos</th>
@@ -189,8 +185,22 @@ export default function LeagueTablePage() {
 
                 return (
                   <Fragment key={teamId}>
-                    <tr className={`league-table__summary-row ${index === 0 ? 'league-table__row--leader' : ''} ${position <= 4 ? 'league-table__row--top-four' : ''}`}>
-                      <td className="league-table__rank-cell"><span className={index === 0 ? 'league-table__rank-badge league-table__rank-badge--leader' : 'league-table__rank-badge'}>{String(position).padStart(2, '0')}</span></td>
+                    <tr
+                      className={`league-table__summary-row ${
+                        index === 0 ? 'league-table__row--leader' : ''
+                      } ${position <= 4 ? 'league-table__row--top-four' : ''}`}
+                    >
+                      <td className="league-table__rank-cell">
+                        <span
+                          className={
+                            index === 0
+                              ? 'league-table__rank-badge league-table__rank-badge--leader'
+                              : 'league-table__rank-badge'
+                          }
+                        >
+                          {String(position).padStart(2, '0')}
+                        </span>
+                      </td>
                       <td className="league-table__club-cell">
                         <button
                           type="button"
@@ -198,44 +208,120 @@ export default function LeagueTablePage() {
                           aria-label={`${expanded ? 'Hide' : 'Show'} ${teamName} standings and recent results`}
                           aria-expanded={expanded}
                           aria-controls={detailsId}
-                          onClick={() => setExpandedTeamId(expanded ? null : teamId)}
+                          onClick={() =>
+                            setExpandedTeamId(expanded ? null : teamId)
+                          }
                         >
-                          {crest ? <img src={crest} alt="" className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" /> : <span className="league-table__crest-fallback">{clean(teamName).slice(0, 2).toUpperCase()}</span>}
-                          <span className="min-w-0 flex-1 truncate font-bold" title={teamName}>{team.shortName || clean(teamName)}</span>
-                          <span className={`league-table__chevron ${expanded ? 'league-table__chevron--open' : ''}`} aria-hidden="true">⌄</span>
+                          {crest ? (
+                            <img
+                              src={crest}
+                              alt=""
+                              className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9"
+                            />
+                          ) : (
+                            <span className="league-table__crest-fallback">
+                              {clean(teamName).slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                          <span
+                            className="min-w-0 flex-1 truncate font-bold"
+                            title={teamName}
+                          >
+                            {team.shortName || clean(teamName)}
+                          </span>
+                          <span
+                            className={`league-table__chevron ${
+                              expanded ? 'league-table__chevron--open' : ''
+                            }`}
+                            aria-hidden="true"
+                          >
+                            ⌄
+                          </span>
                         </button>
                       </td>
-                      <td className="league-table__played-cell">{stat(row, 'playedGames', 'played')}</td>
-                      <td className="league-table__points-cell"><span>{points}</span></td>
+                      <td className="league-table__played-cell">
+                        {stat(row, 'playedGames', 'played')}
+                      </td>
+                      <td className="league-table__points-cell">
+                        <span>{points}</span>
+                      </td>
                     </tr>
-                    <tr id={detailsId} hidden={!expanded} className="league-table__details-row">
+                    <tr
+                      id={detailsId}
+                      hidden={!expanded}
+                      className="league-table__details-row"
+                    >
                       <td colSpan={4}>
-                        <div className="league-table__details" aria-label={`${teamName} statistics and recent form`}>
+                        <div
+                          className="league-table__details"
+                          aria-label={`${teamName} statistics and recent form`}
+                        >
                           <div className="league-table__detail-group">
-                            <span className="league-table__detail-label">Record</span>
+                            <span className="league-table__detail-label">
+                              Record
+                            </span>
                             <div className="league-table__detail-stats">
-                              <span><b>{stat(row, 'won', 'wins')}</b> Wins</span>
-                              <span><b>{stat(row, 'draw', 'draws')}</b> Draws</span>
-                              <span><b>{stat(row, 'lost', 'losses')}</b> Losses</span>
+                              <span>
+                                <b>{stat(row, 'won', 'wins')}</b> Wins
+                              </span>
+                              <span>
+                                <b>{stat(row, 'draw', 'draws')}</b> Draws
+                              </span>
+                              <span>
+                                <b>{stat(row, 'lost', 'losses')}</b> Losses
+                              </span>
                             </div>
                           </div>
                           <div className="league-table__detail-group">
-                            <span className="league-table__detail-label">Goals</span>
+                            <span className="league-table__detail-label">
+                              Goals
+                            </span>
                             <div className="league-table__detail-stats">
-                              <span><b>{stat(row, 'goalsFor', 'gf')}</b> For</span>
-                              <span><b>{stat(row, 'goalsAgainst', 'ga')}</b> Against</span>
-                              <span><b className={goalDifference > 0 ? 'league-table__positive' : goalDifference < 0 ? 'league-table__negative' : ''}>{goalDifference > 0 ? `+${goalDifference}` : goalDifference}</b> Difference</span>
+                              <span>
+                                <b>{stat(row, 'goalsFor', 'gf')}</b> For
+                              </span>
+                              <span>
+                                <b>{stat(row, 'goalsAgainst', 'ga')}</b> Against
+                              </span>
+                              <span>
+                                <b
+                                  className={
+                                    goalDifference > 0
+                                      ? 'league-table__positive'
+                                      : goalDifference < 0
+                                      ? 'league-table__negative'
+                                      : ''
+                                  }
+                                >
+                                  {goalDifference > 0
+                                    ? `+${goalDifference}`
+                                    : goalDifference}
+                                </b>{' '}
+                                Difference
+                              </span>
                             </div>
                           </div>
                           <div className="league-table__detail-group league-table__detail-group--form">
-                            <span className="league-table__detail-label">Last five results</span>
+                            <span className="league-table__detail-label">
+                              Last five results
+                            </span>
                             <ol className="league-table__recent-results">
-                              {form.length ? form.map((item, i) => (
-                                <li key={`${teamId}-${i}`}>
-                                  <span className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}>{item.result}</span>
-                                  <span>{item.label.substring(2)}</span>
+                              {form.length ? (
+                                form.map((item, i) => (
+                                  <li key={`${teamId}-${i}`}>
+                                    <span
+                                      className={`league-form-dot league-form-dot--${item.result.toLowerCase()}`}
+                                    >
+                                      {item.result}
+                                    </span>
+                                    <span>{item.label.substring(2)}</span>
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="league-table__no-form">
+                                  No recent results
                                 </li>
-                              )) : <li className="league-table__no-form">No recent results</li>}
+                              )}
                             </ol>
                           </div>
                         </div>
@@ -249,10 +335,18 @@ export default function LeagueTablePage() {
         </div>
         <div className="league-table-legend">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span><b className="league-key league-key--blue" /> Qualification places</span>
-            <span><b className="league-key league-key--green" /> Win</span>
-            <span><b className="league-key league-key--draw" /> Draw</span>
-            <span><b className="league-key league-key--red" /> Loss</span>
+            <span>
+              <b className="league-key league-key--blue" /> Qualification places
+            </span>
+            <span>
+              <b className="league-key league-key--green" /> Win
+            </span>
+            <span>
+              <b className="league-key league-key--draw" /> Draw
+            </span>
+            <span>
+              <b className="league-key league-key--red" /> Loss
+            </span>
           </div>
           <span>Tap a club to see its record and recent form</span>
         </div>
