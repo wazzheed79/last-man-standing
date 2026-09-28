@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useMemo } from 'react'
 
@@ -20,11 +20,21 @@ export default function LeagueCycleHistory({
   picks,
   cycleNumber,
   winnerPlayerId = null,
+  hidePicksUntilKo = false,
+  currentGameweek,
+  firstKickoff,
+  viewerPlayerId = null,
 }: {
   players: Player[]
   picks: PickRow[]
   cycleNumber: number
   winnerPlayerId?: string | null
+  /** When true, mask other players' current-GW team names until first kick-off */
+  hidePicksUntilKo?: boolean
+  currentGameweek?: number | null
+  firstKickoff?: Date | string | null
+  /** Competition player id of the logged-in user (their own pick stays visible) */
+  viewerPlayerId?: string | null
 }) {
   const cyclePicks = useMemo(
     () =>
@@ -36,8 +46,11 @@ export default function LeagueCycleHistory({
 
   const gameweeks = useMemo(() => {
     const values = cyclePicks.map((pick) => pick.gameweek)
+    if (currentGameweek != null && !values.includes(currentGameweek)) {
+      values.push(currentGameweek)
+    }
     return Array.from(new Set(values)).sort((a, b) => a - b)
-  }, [cyclePicks])
+  }, [cyclePicks, currentGameweek])
 
   const playerMatrix = useMemo(() => {
     const map = new Map<string, Record<number, string>>()
@@ -50,6 +63,36 @@ export default function LeagueCycleHistory({
 
     return map
   }, [cyclePicks])
+
+  const kickoffMs = useMemo(() => {
+    if (!firstKickoff) return null
+    const t =
+      firstKickoff instanceof Date
+        ? firstKickoff.getTime()
+        : new Date(firstKickoff).getTime()
+    return Number.isFinite(t) ? t : null
+  }, [firstKickoff])
+
+  const currentGwLocked =
+    !!hidePicksUntilKo &&
+    currentGameweek != null &&
+    (kickoffMs == null || Date.now() < kickoffMs)
+
+  const displayTeam = (
+    playerId: string,
+    gw: number,
+    teamName: string | undefined
+  ): string => {
+    if (!teamName) return '—'
+    if (
+      currentGwLocked &&
+      gw === currentGameweek &&
+      playerId !== viewerPlayerId
+    ) {
+      return 'Hidden'
+    }
+    return teamName
+  }
 
   const alive = players.filter((p) => p.status === 'alive').length
   const out = players.filter((p) => p.status === 'eliminated').length
@@ -72,12 +115,20 @@ export default function LeagueCycleHistory({
               Winner: {winner.display_name || 'Player'}
             </p>
           )}
+          {currentGwLocked && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              GW{currentGameweek} picks are hidden until first kick-off (your own
+              pick still shows).
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 text-center">
             <div className="text-slate-500 dark:text-slate-400">Alive</div>
-            <div className="font-bold text-emerald-700 dark:text-emerald-300">{alive}</div>
+            <div className="font-bold text-emerald-700 dark:text-emerald-300">
+              {alive}
+            </div>
           </div>
           <div className="rounded-lg bg-red-50 dark:bg-red-900/20 px-2 py-1 text-center">
             <div className="text-slate-500 dark:text-slate-400">Out</div>
@@ -90,10 +141,20 @@ export default function LeagueCycleHistory({
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 dark:bg-slate-900/40">
             <tr>
-              <th className="px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">Player</th>
+              <th className="px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
+                Player
+              </th>
               {gameweeks.map((gw) => (
-                <th key={gw} className="px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
+                <th
+                  key={gw}
+                  className="px-3 py-2 font-semibold text-slate-700 dark:text-slate-200"
+                >
                   GW{gw}
+                  {currentGwLocked && gw === currentGameweek ? (
+                    <span className="ml-1 text-[10px] font-normal text-slate-400">
+                      (hidden)
+                    </span>
+                  ) : null}
                 </th>
               ))}
             </tr>
@@ -105,7 +166,10 @@ export default function LeagueCycleHistory({
               const isWinner = winnerPlayerId === player.id
 
               return (
-                <tr key={player.id} className="border-t border-slate-200 dark:border-slate-700">
+                <tr
+                  key={player.id}
+                  className="border-t border-slate-200 dark:border-slate-700"
+                >
                   <td className="px-3 py-2 font-medium text-slate-900 dark:text-white">
                     {player.display_name || 'Player'}
                     {isWinner && (
@@ -115,11 +179,22 @@ export default function LeagueCycleHistory({
                     )}
                   </td>
 
-                  {gameweeks.map((gw) => (
-                    <td key={`${player.id}-${gw}`} className="px-3 py-2 text-slate-700 dark:text-slate-300">
-                      {row[gw] ?? '-'}
-                    </td>
-                  ))}
+                  {gameweeks.map((gw) => {
+                    const shown = displayTeam(player.id, gw, row[gw])
+                    const isHidden = shown === 'Hidden'
+                    return (
+                      <td
+                        key={`${player.id}-${gw}`}
+                        className={`px-3 py-2 ${
+                          isHidden
+                            ? 'text-slate-400 dark:text-slate-500 italic'
+                            : 'text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {shown}
+                      </td>
+                    )
+                  })}
                 </tr>
               )
             })}
