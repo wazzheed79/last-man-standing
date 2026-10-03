@@ -79,4 +79,5 @@ html.dark .league-app-shell {
 .league-header .theme-toggle:hover { background: rgba(255,255,255,.14); }
 
 @import "./league-ui-a.css";
-@import "./league-ui-b.css";
+@import "./league-ui-b1.css";
+@import "./league-ui-b2.css";
