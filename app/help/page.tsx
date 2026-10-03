@@ -84,12 +84,14 @@ export default function HelpPage() {
           </ul>
         </section>
 
-        <Link
-          href="/feedback"
-          className="block text-center text-sm text-blue-600 dark:text-blue-400 hover:underline pt-2"
-        >
-          Got a question or suggestion? Send feedback
-        </Link>
+        <div className="flex flex-col items-center gap-2 pt-2 text-sm">
+          <Link href="/feedback" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Got a question or suggestion? Send feedback
+          </Link>
+          <Link href="/privacy" className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
+            Privacy policy
+          </Link>
+        </div>
       </main>
     </div>
   )
