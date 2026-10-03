@@ -130,6 +130,19 @@ export default function HomePage() {
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-10">
           Open a league to pick teams, view players, fixtures and results.
         </p>
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3 space-x-3">
+          <Link href="/help" className="hover:underline">
+            How to play
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/privacy" className="hover:underline">
+            Privacy
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/feedback" className="hover:underline">
+            Feedback
+          </Link>
+        </p>
       </main>
     </div>
   )
