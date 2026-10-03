@@ -1,0 +1,130 @@
+.league-page-intro {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem;
+  padding: .5rem .15rem .35rem;
+}
+.league-eyebrow {
+  display: flex; align-items: center; gap: .5rem; color: #57708f; font-size: .66rem;
+  font-weight: 900; letter-spacing: .15em; text-transform: uppercase;
+}
+html.dark .league-eyebrow { color: #99b0ce; }
+.league-eyebrow__dot { display: inline-block; width: .48rem; height: .48rem; border-radius: 50%; background: #1594ef; box-shadow: 0 0 0 4px rgba(21,148,239,.13); }
+.league-eyebrow__dot--red { background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,.12); }
+.league-page-title { margin-top: .35rem; color: #0b1e35; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 950; letter-spacing: -.06em; line-height: 1.05; }
+html.dark .league-page-title { color: #f6f9ff; }
+.league-page-subtitle { margin-top: .55rem; max-width: 42rem; color: #62758d; font-size: .88rem; line-height: 1.5; }
+html.dark .league-page-subtitle { color: #a8bad0; }
+.league-intro-tag {
+  display: inline-flex; align-items: center; gap: .6rem; flex: 0 0 auto; padding: .55rem .8rem;
+  border: 1px solid #d8e3f0; border-radius: .85rem; background: rgba(255,255,255,.8); color: #304763;
+  font-size: .72rem; font-weight: 800; box-shadow: 0 5px 16px rgba(13,36,65,.04);
+}
+html.dark .league-intro-tag { border-color: #263d59; background: rgba(15,35,59,.85); color: #e2ecf8; }
+.league-intro-tag__icon { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border-radius: .55rem; background: #e3f2ff; color: #075bb5; font-size: .64rem; font-weight: 950; }
+.league-intro-tag__icon--red { background: #ffe4e6; color: #be123c; }
+html.dark .league-intro-tag__icon { background: #123a64; color: #8bcaff; }
+html.dark .league-intro-tag__icon--red { background: #4a1d2c; color: #fda4af; }
+
+.league-stat-card {
+  position: relative; display: flex; min-height: 7.2rem; flex-direction: column; align-items: flex-start; justify-content: center;
+  overflow: hidden; border: 1px solid #dce5ef; border-radius: 1.1rem; background: #fff; padding: 1rem 1.15rem;
+  box-shadow: 0 8px 24px rgba(13,36,65,.045);
+}
+.league-stat-card::after { position: absolute; right: -1.5rem; bottom: -2rem; width: 7rem; height: 7rem; border-radius: 50%; background: rgba(37,99,235,.06); content: ''; }
+.league-stat-card__label { color: #61758e; font-size: .62rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+.league-stat-card__value { margin-top: .35rem; color: #0b1e35; font-size: 1.7rem; font-weight: 950; letter-spacing: -.06em; line-height: 1; }
+.league-stat-card__value--team { font-size: 1.25rem; }
+.league-stat-card__detail { margin-top: .35rem; color: #75869b; font-size: .72rem; font-weight: 650; }
+.league-stat-card--leader { border-color: #b8d9ff; background: linear-gradient(135deg, #eff7ff, #fff 70%); }
+.league-stat-card--leader .league-stat-card__value { color: #075bb5; }
+.league-stat-card--out { border-color: #fecdd3; background: linear-gradient(135deg, #fff1f2, #fff 70%); }
+.league-stat-card--out .league-stat-card__value { color: #be123c; }
+html.dark .league-stat-card { border-color: #243b56; background: #10233b; box-shadow: 0 10px 28px rgba(0,0,0,.12); }
+html.dark .league-stat-card__label { color: #9bb0c9; }
+html.dark .league-stat-card__value { color: #f2f7ff; }
+html.dark .league-stat-card__detail { color: #9bb0c9; }
+html.dark .league-stat-card--leader { border-color: #1d4f82; background: linear-gradient(135deg, #102f50, #10233b 70%); }
+html.dark .league-stat-card--leader .league-stat-card__value { color: #8bcaff; }
+html.dark .league-stat-card--out { border-color: #713047; background: linear-gradient(135deg, #3a1b2b, #10233b 70%); }
+
+.league-table-card, .league-fixture-section, .league-matchday-card {
+  overflow: hidden; border: 1px solid #dce5ef; border-radius: 1.15rem; background: #fff;
+  box-shadow: 0 10px 30px rgba(13,36,65,.05);
+}
+html.dark .league-table-card, html.dark .league-fixture-section, html.dark .league-matchday-card { border-color: #243b56; background: #10233b; }
+.league-card-heading, .league-matchday-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.15rem 1.35rem;
+  border-bottom: 1px solid #e6edf5; background: linear-gradient(90deg, #f8fbff, #fff);
+}
+html.dark .league-card-heading, html.dark .league-matchday-heading { border-color: #243b56; background: linear-gradient(90deg, #132b47, #10233b); }
+.league-card-heading__eyebrow, .league-matchday-heading__eyebrow { color: #71839a; font-size: .58rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.league-card-heading h3, .league-matchday-heading h3 { margin-top: .2rem; color: #0b1e35; font-size: 1.16rem; font-weight: 900; letter-spacing: -.025em; }
+html.dark .league-card-heading h3, html.dark .league-matchday-heading h3 { color: #f1f6fc; }
+.league-matchday-heading h3 span { color: #62758d; font-size: .8rem; font-weight: 700; }
+.league-card-heading__count, .league-matchday-heading__count { border-radius: 999px; background: #eaf3ff; padding: .38rem .65rem; color: #145da9; font-size: .64rem; font-weight: 900; white-space: nowrap; }
+html.dark .league-card-heading__count, html.dark .league-matchday-heading__count { background: #153a62; color: #9bd1ff; }
+
+.league-table { color: #485c74; font-variant-numeric: tabular-nums; }
+.league-table thead { background: linear-gradient(100deg, #102b49, #164d7e); color: #eaf4ff; }
+.league-table thead th { padding: .8rem .55rem; text-align: center; font-size: .68rem; font-weight: 950; letter-spacing: .1em; text-transform: uppercase; }
+.league-table thead th:first-child, .league-table thead th:nth-child(2) { text-align: left; }
+.league-table__rank { width: 4.4rem; padding-left: 1rem !important; }
+.league-table__club { width: auto; }
+.league-table__played { width: 3.7rem; }
+.league-table__points { width: 4.9rem; }
+.league-table tbody tr { border-bottom: 1px solid #edf1f6; transition: background .16s; }
+.league-table tbody tr:hover { background: #f5f9fe; }
+.league-table tbody td { padding: .72rem .5rem; text-align: center; font-size: .88rem; font-weight: 700; }
+.league-table tbody .league-table__rank-cell { padding-left: 1rem; }
+.league-table__club-cell { overflow: hidden; padding-right: .25rem !important; padding-left: .25rem !important; text-align: left !important; color: #19304b; font-size: .96rem !important; }
+.league-table__played-cell { color: #65788e; }
+.league-table__club-toggle { position: relative; display: flex; width: 100%; min-width: 0; align-items: center; gap: .65rem; padding: .1rem .25rem; color: inherit; text-align: left; }
+.league-table__club-toggle:focus-visible { outline: 2px solid #168af2; outline-offset: 3px; border-radius: .5rem; }
+.league-table__chevron { flex: 0 0 auto; color: #8192a6; font-size: 1.15rem; line-height: 1; transition: transform .18s; }
+.league-table__chevron--open { transform: rotate(180deg); color: #075bb5; }
+.league-table__row--leader { background: #f1f7ff; }
+.league-table__row--leader:hover { background: #e9f3ff !important; }
+.league-table__row--leader .league-table__club-cell { color: #075bb5; }
+.league-table__row--top-four .league-table__rank-cell { box-shadow: inset 3px 0 #168af2; }
+.league-table__details-row > td { padding: 0 !important; text-align: left !important; }
+.league-table__details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem 1.1rem; border-top: 1px solid #e1eaf4; background: #f7faff; padding: .9rem 1rem 1rem 5.5rem; }
+.league-table__detail-group { min-width: 0; }
+.league-table__detail-group--form { grid-column: 1 / -1; }
+.league-table__detail-label { display: block; margin-bottom: .45rem; color: #71839a; font-size: .6rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.league-table__detail-stats { display: flex; flex-wrap: wrap; gap: .4rem; }
+.league-table__detail-stats span { display: inline-flex; align-items: baseline; gap: .28rem; border: 1px solid #e0e9f3; border-radius: .55rem; background: #fff; padding: .32rem .5rem; color: #697b90; font-size: .66rem; font-weight: 700; }
+.league-table__detail-stats b { color: #183654; font-size: .83rem; font-weight: 950; }
+.league-table__recent-results { display: grid; gap: .4rem; }
+.league-table__recent-results li { display: flex; align-items: center; gap: .55rem; color: #304c69; font-size: .74rem; font-weight: 750; }
+.league-table__recent-results .league-form-dot { width: 1.55rem; height: 1.55rem; flex: 0 0 auto; font-size: .58rem; }
+.league-table__no-form { color: #8291a3; font-size: .72rem; }
+.league-table__rank-badge { display: inline-grid; width: 2rem; height: 2rem; place-items: center; border-radius: .6rem; background: #eef2f7; color: #697b90; font-size: .72rem; font-weight: 950; }
+.league-table__rank-badge--leader { background: #0d67c5; color: white; box-shadow: 0 4px 10px rgba(13,103,197,.25); }
+.league-table__crest-fallback { display: grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: .6rem; background: #e9f3ff; color: #155eaa; font-size: .64rem; font-weight: 950; }
+.league-table__positive { color: #118052; }
+.league-table__negative { color: #d34454; }
+.league-table__points-cell span { display: inline-grid; min-width: 2.55rem; height: 2.2rem; place-items: center; border-radius: .7rem; background: #eaf3ff; color: #075bb5; font-size: .96rem; font-weight: 950; }
+.league-table__row--leader .league-table__points-cell span { background: #075bb5; color: #fff; }
+.league-form-dot { display: inline-flex; width: 1.7rem; height: 1.7rem; align-items: center; justify-content: center; border: 0; border-radius: .5rem; color: #fff; font-size: .65rem; font-weight: 950; cursor: help; }
+.league-form-dot--w { background: #099765; }
+.league-form-dot--d { background: #8292a6; }
+.league-form-dot--l { background: #e34c5b; }
+.league-table-legend { display: flex; align-items: center; justify-content: space-between; gap: .75rem; border-top: 1px solid #e6edf5; padding: .75rem 1rem; color: #7b8ba0; font-size: .62rem; font-weight: 650; }
+.league-key { display: inline-block; width: .46rem; height: .46rem; margin-right: .28rem; border-radius: 2px; vertical-align: .02rem; }
+.league-key--blue { background: #168af2; }.league-key--green { background: #099765; }.league-key--draw { background: #8292a6; }.league-key--red { background: #e34c5b; }
+html.dark .league-table { color: #b8c7d9; }
+html.dark .league-table thead { background: linear-gradient(100deg, #07172a, #10375d); color: #d3e8ff; }
+html.dark .league-table tbody tr { border-color: #203650; }
+html.dark .league-table tbody tr:hover { background: #152c46; }
+html.dark .league-table__row--leader { background: #112e4c; }
+html.dark .league-table__row--leader:hover { background: #15385d !important; }
+html.dark .league-table__details { border-color: #29435e; background: #0d1f34; }
+html.dark .league-table__detail-stats span { border-color: #29425d; background: #142a42; color: #9bb0c9; }
+html.dark .league-table__detail-stats b { color: #e2edfa; }
+html.dark .league-table__chevron--open { color: #9bd1ff; }
+html.dark .league-table__recent-results li { color: #d3deeb; }
+html.dark .league-table__club-cell { color: #e5edf7; }
+html.dark .league-table__row--leader:hover { background: #15385d !important; }
+html.dark .league-table__row--leader .league-table__club-cell { color: #9bd1ff; }
+html.dark .league-table__rank-badge { background: #1e354f; color: #b4c6da; }
+html.dark .league-table__points-cell span { background: #173b62; color: #9bd1ff; }
+html.dark .league-table-legend { border-color: #243b56; color: #9bb0c9; }
