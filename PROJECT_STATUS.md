@@ -85,5 +85,5 @@ Push to main when done. Do not rewrite unrelated pages.
 
 ---
 
-**Last updated:** 2026-09-28  
-**Recent UI:** removed Overview cycle history; Players show “Picked · Hidden until KO”; popularity GW = current only; table summary cards removed; invite/auth callback flow live.
+**Last updated:** 2026-10-03  
+**Recent UI:** League tab bar polish — larger/bolder labels (~0.92rem / weight 800), brighter inactive text, stronger active highlight + underline glow; mobile tabs ~0.82rem. Styles split across `globals.css` + `league-ui-a/b1/b2.css` after a truncated push recovery.
