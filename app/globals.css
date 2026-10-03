@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode so ThemeToggle (html.dark) drives dark: utilities */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f2f6fb;
   --foreground: #0b1e35;
