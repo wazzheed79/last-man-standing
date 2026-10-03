@@ -146,7 +146,7 @@ export default function LeagueFixturesPage() {
     )
   }
 
-  if (loading) return <p className="text-slate-500 text-center">Loading fixtures...</p>
+  if (loading) return <p className="text-slate-500 dark:text-slate-400 text-center">Loading fixtures...</p>
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -165,7 +165,7 @@ export default function LeagueFixturesPage() {
           Refresh now
         </button>
       </p>
-      {loadError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">Couldn&apos;t refresh fixtures: {loadError}</p>}
+      {loadError && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">Couldn't refresh fixtures: {loadError}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="league-stat-card"><span className="league-stat-card__label">This gameweek</span><span className="league-stat-card__value">{thisWeek.length}</span><span className="league-stat-card__detail">fixtures · GW {gameweek}</span></div>
@@ -181,7 +181,7 @@ export default function LeagueFixturesPage() {
           {thisWeek.length ? (
             thisWeek.map(row)
           ) : (
-            <p className="p-4 text-sm text-slate-500">No fixtures loaded.</p>
+            <p className="p-4 text-sm text-slate-500 dark:text-slate-400">No fixtures loaded.</p>
           )}
         </div>
       </section>
@@ -195,8 +195,8 @@ export default function LeagueFixturesPage() {
           {nextWeek.length ? (
             nextWeek.map(row)
           ) : (
-            <p className="p-4 text-sm text-slate-500">
-              Fixtures for next week haven&apos;t loaded yet. Check back later or contact the league organiser if they remain missing.
+            <p className="p-4 text-sm text-slate-500 dark:text-slate-400">
+              Fixtures for next week haven't loaded yet. Check back later or contact the league organiser if they remain missing.
             </p>
           )}
         </div>
