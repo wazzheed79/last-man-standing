@@ -80,22 +80,34 @@ Deno.serve(async (req) => {
     const soonFrom = new Date(now - LIVE_WINDOW_MS).toISOString()
     const soonTo = new Date(now + LIVE_WINDOW_MS).toISOString()
 
-    // Skip the external API call when there are no live or imminent fixtures.
-    // This keeps pg_cron polling cheap during quiet periods while still updating
-    // normally when a match is near kickoff or already underway.
-    const { data: imminentFixtures, error: imminentError } = await supabase
+    // Check if there are matches currently in progress or kicking off soon.
+    // Matches underway (IN_PLAY, LIVE, PAUSED, etc.) should always be polled
+    // even if their kickoff time is older than the window (e.g. extra time / delays).
+    const { data: activeFixtures } = await supabase
       .from("fixtures_cache")
-      .select("match_id, utc_date, status")
-      .gte("utc_date", soonFrom)
-      .lte("utc_date", soonTo)
+      .select("match_id, status")
+      .in("status", ["IN_PLAY", "LIVE", "PAUSED", "HALFTIME", "HT"])
       .limit(1)
 
-    if (imminentError) {
-      console.error("imminent fixtures query failed", imminentError)
+    const hasActive = Boolean(activeFixtures && activeFixtures.length > 0)
+
+    let hasImminent = false
+    if (!hasActive) {
+      const { data: imminentFixtures, error: imminentError } = await supabase
+        .from("fixtures_cache")
+        .select("match_id, utc_date, status")
+        .gte("utc_date", soonFrom)
+        .lte("utc_date", soonTo)
+        .limit(1)
+
+      if (imminentError) {
+        console.error("imminent fixtures query failed", imminentError)
+      }
+      hasImminent = Boolean(imminentFixtures && imminentFixtures.length > 0)
     }
 
-    if (!imminentFixtures || imminentFixtures.length === 0) {
-      console.log("No live/imminent fixtures. Skipping football-data.org fetch.", {
+    if (!hasActive && !hasImminent) {
+      console.log("No live or imminent fixtures. Skipping football-data.org fetch.", {
         matchday,
         now: new Date(now).toISOString(),
         windowMs: LIVE_WINDOW_MS,
@@ -138,7 +150,7 @@ Deno.serve(async (req) => {
 
     let updated = 0
     let skipped_manual = 0
-    let errors: string[] = []
+    const errors: string[] = []
 
     for (const m of matches) {
       const match_id = m.id
