@@ -45,6 +45,7 @@ Update this doc after meaningful changes.
 | `/league/[id]/table` | PL standings (compact; no clubs/matches/leader summary cards) |
 | `/league/[id]/fixtures` | Fixtures |
 | `/competitions` | My leagues |
+| `/account` | Account settings, push notification trigger, in-app account deletion |
 
 ## Key DB objects
 
@@ -54,7 +55,7 @@ Update this doc after meaningful changes.
 `competitions.allow_pick_changes`, `hide_picks_until_ko`, `cycle_number`, `current_gameweek`, `status`  
 `picks.cycle_number`, `status`, `result`, `deadline_exempt`  
 
-**RPCs:** `make_pick`, `join_competition`, `create_competition`, `process_gameweek_results`, `handle_wipeout_rollover`, `get_gameweek_deadline`, automation runner  
+**RPCs:** `make_pick`, `join_competition`, `create_competition`, `process_gameweek_results`, `handle_wipeout_rollover`, `get_gameweek_deadline`, `delete_own_account`, automation runner  
 
 **Edge functions:** `fetch-fixtures`, `live-scores`, `get-standings` (secrets: prefer `FOOTBALL_DATA_API_KEY`, fallbacks ok)
 
@@ -85,5 +86,5 @@ Push to main when done. Do not rewrite unrelated pages.
 
 ---
 
-**Last updated:** 2026-10-03  
-**Recent UI:** League tab bar polish — larger/bolder labels (~0.92rem / weight 800), brighter inactive text, stronger active highlight + underline glow; mobile tabs ~0.82rem. Styles split across `globals.css` + `league-ui-a/b1/b2.css` after a truncated push recovery.
+**Last updated:** 2026-11-13  
+**Recent UI & Features:** App Store & Google Play readiness — added `capacitor.config.ts`, scaffolded `@capacitor/core` & `@capacitor/cli`, built dedicated `/account` settings route with push notification enablement and in-app account deletion (Apple Guideline 5.1.1(v) compliance), updated `/privacy`, added `delete_own_account` migration, and documented store deployment in `docs/APP_STORE_GUIDE.md`.

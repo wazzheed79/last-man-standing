@@ -64,7 +64,7 @@ export default function PrivacyPage() {
             <li>You can leave a league from the league overview.</li>
             <li>You can sign out at any time from the home screen.</li>
             <li>You can revoke browser notification permission in your device or browser settings.</li>
-            <li>To request deletion of your account or data, contact the app operator via the feedback form.</li>
+            <li>You can delete your account and all associated data at any time under <Link href="/account" className="text-blue-600 dark:text-blue-400 hover:underline">Account Settings</Link>.</li>
           </ul>
         </section>
 
