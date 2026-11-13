@@ -3,6 +3,8 @@
   "name": "Last Man Standing",
   "short_name": "LMS",
   "description": "Premier League Last Man Standing predictor game.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +12,7 @@
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "categories": ["sports", "games"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -34,6 +37,34 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/last-man-standing-crest.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Last Man Standing Crest"
+    },
+    {
+      "src": "/last-man-standing-emblem.jpg",
+      "sizes": "237x155",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Last Man Standing Mobile"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Leagues",
+      "url": "/competitions",
+      "description": "View active competitions"
+    },
+    {
+      "name": "Account Settings",
+      "url": "/account",
+      "description": "Notification and account preferences"
     }
   ]
 }
