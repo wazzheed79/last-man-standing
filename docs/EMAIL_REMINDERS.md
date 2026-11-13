@@ -88,6 +88,7 @@ Local device only; does not use email or this pipeline.
 - Deadline time (UTC)
 - CTA button → `{SITE_URL}/league/{id}/pick`
 - Note: no pick by deadline = eliminated
+- Footer: free to play, no entry fee and no prize
 
 **Env for links:** `NEXT_PUBLIC_SITE_URL` (fallback in code may be an older Vercel URL — set the live URL in function secrets).
 

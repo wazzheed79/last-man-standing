@@ -132,16 +132,19 @@ export default function CreateCompetitionPage() {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
-                Prize / rules notes{' '}
+                House rules{' '}
                 <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                placeholder="e.g. £5 entry, winner takes the pot"
+                placeholder="e.g. bragging rights only — free to play, no prizes"
                 className={`${inputClass} text-sm resize-none`}
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                This game is free. Please don&apos;t use this box to collect an entry fee or offer a prize pot.
+              </p>
             </div>
 
             <div>

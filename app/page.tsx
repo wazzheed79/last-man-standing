@@ -137,10 +137,15 @@ export default function HomePage() {
 
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-10">
           Open a league to pick teams, view players, fixtures and results.
+          Free to play — bragging rights only, no entry fee and no prizes.
         </p>
         <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3 space-x-3">
           <Link href="/help" className="hover:underline">
             How to play
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/terms" className="hover:underline">
+            Terms
           </Link>
           <span aria-hidden="true">·</span>
           <Link href="/privacy" className="hover:underline">
