@@ -1,6 +1,11 @@
-'use client'
-
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description:
+    'What Last Man Standing stores: your email, display name, and picks. No payment details. Free to play.',
+}
 
 export default function PrivacyPage() {
   return (
@@ -18,43 +23,58 @@ export default function PrivacyPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-        <p className="text-xs text-slate-500 dark:text-slate-400">Last updated: 3 October 2026</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Last updated: 13 November 2026</p>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">Who we are</h2>
           <p>
-            Last Man Standing is a Premier League pick&apos;em competition app operated for private leagues.
-            This policy explains what data we store and how it is used.
+            Last Man Standing is a free Premier League prediction game for private leagues. It is
+            not a gambling service. We do not take entry fees and we do not pay prizes. This policy
+            explains what we store and why.
           </p>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">What we collect</h2>
           <ul className="list-disc list-inside space-y-1">
-            <li>Account details you provide (email address, and a display name in each league).</li>
-            <li>Competition data: leagues you join or create, weekly team picks, and game results.</li>
-            <li>Technical data needed to run the service (session tokens via Supabase Auth).</li>
-            <li>Optional browser notification permission if you enable pick reminders on a device.</li>
+            <li>The email address and password you use to sign in.</li>
+            <li>The display name you choose in each league.</li>
+            <li>League membership, weekly team picks, and game results.</li>
+            <li>Optional notes a league organiser types when they create a league.</li>
+            <li>Messages you send on the feedback page.</li>
+            <li>A sign-in session, stored so you stay logged in.</li>
           </ul>
           <p>
-            We do not sell personal data. Fixture and standings data comes from third-party football data providers.
+            We do not collect payment details, because the game is free. We do not sell personal
+            data. Fixture and league-table data is fetched by our server from a football data
+            provider. That request does not include your name or email.
           </p>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">How we use data</h2>
           <ul className="list-disc list-inside space-y-1">
-            <li>To run your leagues (picks, eliminations, standings, invites).</li>
+            <li>To run your leagues: picks, eliminations, standings, and join codes.</li>
             <li>To sign you in and keep your session secure.</li>
-            <li>To show optional on-device reminders about pick deadlines (only if you allow notifications).</li>
+            <li>To read and reply to feedback you choose to send.</li>
+            <li>
+              To send a pick-deadline reminder to your account email, only when reminder emails are
+              switched on. These are not marketing emails.
+            </li>
+            <li>
+              To show an on-device reminder before a deadline, only if you allow browser
+              notifications.
+            </li>
           </ul>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">Where data is stored</h2>
           <p>
-            Account and competition data are stored in Supabase (authentication and database).
-            The app is hosted on Vercel. Providers process data under their own security and privacy terms.
+            Accounts and league data are stored with Supabase (sign-in and database). The app is
+            hosted on Vercel. If a reminder email is sent, that message goes out through an email
+            service (Resend). When a league page shows a join QR code, the join link is sent to a
+            QR-code image service so the picture can be drawn.
           </p>
         </section>
 
@@ -63,24 +83,29 @@ export default function PrivacyPage() {
           <ul className="list-disc list-inside space-y-1">
             <li>You can leave a league from the league overview.</li>
             <li>You can sign out at any time from the home screen.</li>
-            <li>You can revoke browser notification permission in your device or browser settings.</li>
-            <li>You can delete your account and all associated data at any time under <Link href="/account" className="text-blue-600 dark:text-blue-400 hover:underline">Account Settings</Link>.</li>
+            <li>You can turn off browser notifications in your device or browser settings.</li>
+            <li>
+              You can delete your account, picks, and league membership from{' '}
+              <Link href="/account" className="text-blue-600 dark:text-blue-400 hover:underline">
+                Account Settings
+              </Link>
+              . A league you created stays open if other people are still in it.
+            </li>
           </ul>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">Cookies and local storage</h2>
           <p>
-            We use authentication cookies/sessions required to keep you signed in, and local storage for preferences
-            such as theme (light/dark) and optional reminder settings on this device.
+            We use a sign-in cookie so you stay logged in. This browser also stores your theme
+            (light or dark) and, if you turn them on, reminder settings for this device.
           </p>
         </section>
 
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-2">
           <h2 className="font-semibold text-slate-900 dark:text-white">Children</h2>
           <p>
-            The app is intended for adults organising private football competitions.
-            It is not directed at children under 13.
+            The app is a free football prediction game. It is not directed at children under 13.
           </p>
         </section>
 
@@ -94,6 +119,10 @@ export default function PrivacyPage() {
         <p className="text-center pt-2">
           <Link href="/feedback" className="text-blue-600 dark:text-blue-400 hover:underline">
             Questions? Send feedback
+          </Link>
+          {' · '}
+          <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Terms of Use
           </Link>
           {' · '}
           <Link href="/help" className="text-blue-600 dark:text-blue-400 hover:underline">

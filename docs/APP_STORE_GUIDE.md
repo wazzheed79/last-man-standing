@@ -32,19 +32,26 @@ export default config;
 
 ---
 
-## 2. Store Compliance Features (Included)
+## 2. Store compliance in the app
 
-Both Apple and Google have strict review guidelines that reject apps missing legal and account controls:
+Both Apple and Google reject apps that are missing legal pages or a way to delete an account.
 
-1. **In-App Account Deletion (Apple Guideline 5.1.1(v)):**
-   - Implemented under `/account` (`app/account/page.tsx`).
-   - Authenticated users can self-delete their account and player data.
-   - Database RPC created: `supabase/migrations/20261113000000_delete_own_account.sql`.
-2. **Public Privacy Policy:**
-   - Live at `https://last-man-standing-wazzheed79.vercel.app/privacy`.
-   - Meets GDPR and store review requirements.
-3. **Push Notifications Foundation:**
-   - Web & Native notification triggers built into `/account`.
+1. **Account deletion** is on `/account`. The database function is in `supabase/migrations/20261113000000_delete_own_account.sql`. **It is not installed on the live database yet.** Until you run that file in the Supabase SQL editor, the button will tell the player it is not switched on. Do not drop any columns when you run it.
+2. **Privacy Policy:** `/privacy` (on the live site: `https://last-man-standing-wazzheed79.vercel.app/privacy`).
+3. **Terms of Use:** `/terms` (on the live site: `https://last-man-standing-wazzheed79.vercel.app/terms`). The game is free. Say that in the store listing. There is no entry fee and no prize.
+4. **Notifications:** the account page can ask the browser for pick reminders.
+
+### Still for you to do before Google Play or the App Store
+
+The phone apps are not built yet. `capacitor.config.ts` only points a future app shell at the live website. `@capacitor/android` and `@capacitor/ios` are not installed, and there is no `android/` or `ios/` folder.
+
+- Run the delete-account SQL above on the live Supabase project before you submit.
+- Create the Google Play and Apple developer accounts yourself (Google has a one-time registration fee; Apple has a yearly developer fee).
+- Add the Android and iOS projects (`npx cap add android` / `npx cap add ios`) on a machine that has Android Studio or a Mac with Xcode. This cloud copy cannot upload to the stores.
+- Replace `REPLACE_WITH_YOUR_RELEASE_KEY_SHA256_FINGERPRINT` in `public/.well-known/assetlinks.json` after you create the Android release key. The package name there matches `com.wazzheed.lastmanstanding`.
+- In the store forms, choose a sports / trivia game with **no real-money gambling**. Age rating is yours to answer; the app is not aimed at children under 13.
+- Give Apple a demo login in the review notes.
+- Take real phone screenshots for the store listing. The PWA icons (`icon-192.png`, `icon-512.png`) are already the right sizes.
 
 ---
 
@@ -104,4 +111,5 @@ Apple requires building through Xcode on a Mac (or using cloud CI such as GitHub
 ### Apple App Store Review Tips:
 - **Demo Account:** In App Store Connect, provide a test login (email + password) in the Review Notes so Apple's reviewer can test signing in and making picks.
 - **Classification:** Categorize as **Games / Sports / Trivia**. Specify that it is a free-to-play social companion app with no real money gambling.
-- **Privacy Policy URL:** Enter `https://last-man-standing-wazzheed79.vercel.app/privacy`.
+- **Privacy Policy URL:** `https://last-man-standing-wazzheed79.vercel.app/privacy`
+- **Terms URL (support / description):** `https://last-man-standing-wazzheed79.vercel.app/terms`

@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Last Man Standing",
-  description: "Premier League Last Man Standing — pick one team per week, last player standing wins",
+  description:
+    "Free Premier League Last Man Standing game. Pick one team per week. No entry fee and no prizes.",
   applicationName: "Last Man Standing",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

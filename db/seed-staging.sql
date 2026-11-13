@@ -13,7 +13,7 @@ VALUES (
   'STAGE123',
   'open',
   'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
-  'Seeded staging league for testing',
+  'Free-to-play staging league. Bragging rights only — no entry fee and no prizes.',
   NOW(),
   NOW()
 );

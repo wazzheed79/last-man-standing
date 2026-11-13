@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
 
 function LoginForm() {
@@ -24,6 +25,8 @@ function LoginForm() {
   useEffect(() => {
     if (searchParams.get('error') === 'auth_callback') {
       setMessage('Email link expired or invalid. Try signing in, or sign up again.')
+    } else if (searchParams.get('message')) {
+      setMessage(searchParams.get('message') || '')
     }
     // Pre-open Sign Up tab when coming from an invite
     if (searchParams.get('mode') === 'signup') {
@@ -177,12 +180,27 @@ function LoginForm() {
               <p
                 className={`text-sm ${
                   message.toLowerCase().includes('check') ||
-                  message.toLowerCase().includes('created')
+                  message.toLowerCase().includes('created') ||
+                  message.toLowerCase().includes('deleted')
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-red-600 dark:text-red-400'
                 }`}
               >
                 {message}
+              </p>
+            )}
+
+            {isSignUp && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                By creating an account you agree to the{' '}
+                <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Terms of Use
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Privacy Policy
+                </Link>
+                . This is a free game: no entry fee and no prizes.
               </p>
             )}
 
@@ -211,6 +229,15 @@ function LoginForm() {
           <strong>Tip:</strong> Friends joining a league can use Sign Up — with
           confirmation off they go straight in.
         </div>
+        <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400 space-x-3">
+          <Link href="/terms" className="hover:underline">
+            Terms
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/privacy" className="hover:underline">
+            Privacy
+          </Link>
+        </p>
       </div>
     </div>
   )

@@ -440,9 +440,14 @@ export default function LeagueOverviewPage() {
         </div>
 
         {comp?.description && (
-          <p className="text-sm text-slate-600 dark:text-slate-300 mt-3 whitespace-pre-wrap border-t border-slate-100 dark:border-slate-700 pt-3">
-            {comp.description}
-          </p>
+          <div className="mt-3 border-t border-slate-100 dark:border-slate-700 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              League notes
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap">
+              {comp.description}
+            </p>
+          </div>
         )}
       </div>
 

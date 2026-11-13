@@ -117,6 +117,7 @@ serve(async (req) => {
             </a>
           </div>
           <p style="color: #64748b; font-size: 13px;">If you fail to pick in time, you will be eliminated from the competition.</p>
+          <p style="color: #94a3b8; font-size: 12px;">Last Man Standing is free to play. There is no entry fee and no prize — bragging rights only.</p>
         </div>
       `;
 

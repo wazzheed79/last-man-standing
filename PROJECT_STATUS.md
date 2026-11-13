@@ -72,7 +72,8 @@ Update this doc after meaningful changes.
 - Email deadline reminders (needs Resend/Postmark + confirm-email SMTP for public signups)  
 - Optional `max_players` on create  
 - Smarter live-scores cron only during match windows  
-- PWA icons are SVG-based (fine for many devices)
+- PWA icons (`icon-192.png`, `icon-512.png`) are in place. Phone store builds are not: no Android or iOS Capacitor project yet.
+- `delete_own_account` is in the repo only. It is not installed on the live database until that SQL file is run.
 
 ## How to work in a new chat
 
@@ -87,4 +88,4 @@ Push to main when done. Do not rewrite unrelated pages.
 ---
 
 **Last updated:** 2026-11-13  
-**Recent UI & Features:** App Store & Google Play readiness — added `capacitor.config.ts`, scaffolded `@capacitor/core` & `@capacitor/cli`, built dedicated `/account` settings route with push notification enablement and in-app account deletion (Apple Guideline 5.1.1(v) compliance), updated `/privacy`, added `delete_own_account` migration, and documented store deployment in `docs/APP_STORE_GUIDE.md`.
+**Recent UI & Features:** Free-to-play wording only (no entry fee, pot, or prizes). Terms of Use at `/terms`. Privacy policy updated. Account deletion calls `delete_own_account` and no longer pretends the account is gone if that function is missing. The SQL file still needs running on the live database. Store phone apps are not built yet — see `docs/APP_STORE_GUIDE.md`.

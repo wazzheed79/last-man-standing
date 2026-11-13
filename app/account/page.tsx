@@ -66,20 +66,25 @@ export default function AccountPage() {
     setError('')
 
     try {
-      // Call Supabase RPC to delete user's data and auth record
       const { error: rpcError } = await supabase.rpc('delete_own_account')
 
       if (rpcError) {
-        // Fallback: If RPC not yet installed in Supabase, remove their player records and sign out
-        await supabase.from('competition_players').delete().eq('user_id', user.id)
-        await supabase.from('picks').delete().eq('player_id', user.id)
+        const raw = rpcError.message || ''
+        const notReady = /delete_own_account|PGRST202|schema cache|Could not find the function/i.test(raw)
+        setError(
+          notReady
+            ? 'Account deletion is not switched on in the database yet. Use Feedback and ask for your account to be removed.'
+            : raw
+        )
+        setDeleting(false)
+        return
       }
 
       await supabase.auth.signOut()
-      router.push('/login?message=Account+successfully+deleted')
+      router.push('/login?message=' + encodeURIComponent('Your account has been deleted.'))
       router.refresh()
     } catch (err: any) {
-      setError(err?.message || 'Failed to delete account. Please try again or contact support.')
+      setError(err?.message || 'Failed to delete account. Please try again or send feedback.')
       setDeleting(false)
     }
   }
@@ -155,8 +160,13 @@ export default function AccountPage() {
           <h2 className="font-semibold text-slate-900 dark:text-white">Legal & Privacy</h2>
           <div className="space-y-2 text-sm">
             <p>
+              <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
+                Terms of Use &rarr;
+              </Link>
+            </p>
+            <p>
               <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
-                View Privacy Policy &rarr;
+                Privacy Policy &rarr;
               </Link>
             </p>
             <p>
@@ -171,7 +181,7 @@ export default function AccountPage() {
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-rose-200 dark:border-rose-900/40 shadow-sm p-5 space-y-3">
           <h2 className="font-semibold text-rose-600 dark:text-rose-400">Danger Zone</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Permanently delete your account, your picks, and withdraw from all private competitions. This action cannot be undone.
+            Permanently delete your login, your picks, and your place in every league. A league you created stays open if other people are still in it. This cannot be undone.
           </p>
 
           {!showConfirm ? (

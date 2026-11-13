@@ -19,6 +19,14 @@ export default function HelpPage() {
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-4">
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Free to play</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            The game is free. There is no entry fee, no stake, and no prize money.
+            Last player standing gets bragging rights.
+          </p>
+        </section>
+
+        <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-2">The basics</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Every gameweek, pick one Premier League team you think will{' '}
@@ -68,10 +76,10 @@ export default function HelpPage() {
         <section className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-2">How it ends</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            Last player standing wins the league. If everyone gets knocked
-            out in the same gameweek, the competition ends with no winner for
-            that round — check with whoever's running your league for any
-            house rules on ties.
+            Last player standing wins the league — bragging rights only, not a
+            prize. If everyone gets knocked out in the same gameweek, the
+            competition ends with no winner for that round. Check with
+            whoever is running your league for any house rules on ties.
           </p>
         </section>
 
@@ -88,9 +96,15 @@ export default function HelpPage() {
           <Link href="/feedback" className="text-blue-600 dark:text-blue-400 hover:underline">
             Got a question or suggestion? Send feedback
           </Link>
-          <Link href="/privacy" className="text-slate-500 dark:text-slate-400 hover:underline text-xs">
-            Privacy policy
-          </Link>
+          <p className="text-xs text-slate-500 dark:text-slate-400 space-x-3">
+            <Link href="/terms" className="hover:underline">
+              Terms of Use
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link href="/privacy" className="hover:underline">
+              Privacy policy
+            </Link>
+          </p>
         </div>
       </main>
     </div>
