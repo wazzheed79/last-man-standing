@@ -45,11 +45,13 @@ export default function LeagueNav({ leagueId, name, gameweek, status }: LeagueNa
         <div className="league-header__inner">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Image
-              src="/last-man-standing-emblem.jpg"
+              src="/badge.png"
               alt=""
-              width={237}
-              height={155}
-              className="h-[42px] w-16 shrink-0 rounded-xl border border-amber-200/70 bg-white object-cover shadow-md"
+              width={128}
+              height={128}
+              sizes="44px"
+              priority
+              className="h-11 w-11 shrink-0 rounded-xl object-cover shadow-md"
             />
             <div className="min-w-0">
               <p className="league-kicker">Last Man Standing <span>•</span> League centre</p>

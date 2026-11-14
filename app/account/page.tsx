@@ -48,7 +48,7 @@ export default function AccountPage() {
       if (permission === 'granted') {
         new Notification('Last Man Standing', {
           body: 'Pick reminders enabled! You will be reminded before kickoff deadlines.',
-          icon: '/icon-192.png',
+          icon: '/icon-192.png?v=2',
         })
       }
     } catch (e: any) {

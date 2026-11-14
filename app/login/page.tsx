@@ -91,12 +91,13 @@ function LoginForm() {
         <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg border border-transparent dark:border-slate-700">
           <div className="mb-4 flex justify-center">
             <Image
-              src="/last-man-standing-crest.jpg"
-              alt="Last Man Standing Competition badge"
-              width={144}
-              height={144}
+              src="/badge.png"
+              alt="Last Man Standing badge"
+              width={288}
+              height={288}
+              sizes="144px"
               priority
-              className="h-36 w-36 rounded-2xl border border-amber-200 bg-white object-cover shadow-sm"
+              className="h-36 w-36 rounded-2xl object-cover shadow-sm"
             />
           </div>
           <h1 className="text-2xl font-bold mb-4 text-center text-slate-900 dark:text-white">
