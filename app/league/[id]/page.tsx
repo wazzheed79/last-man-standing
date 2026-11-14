@@ -257,7 +257,7 @@ export default function LeagueOverviewPage() {
           if (localStorage.getItem(`lms-remind-${leagueId}`) === '1') {
             new Notification('Last Man Standing', {
               body: `Pick deadline soon for ${comp?.name || 'your league'} (GW${comp?.current_gameweek})`,
-              icon: '/icon.svg',
+              icon: '/icon-192.png?v=2',
             })
           }
         }, ms)
